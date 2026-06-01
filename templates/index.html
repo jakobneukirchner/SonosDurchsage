@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SonosDurchsage</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root, [data-theme="light"] {
+      --bg: #f7f6f2; --surface: #f9f8f5; --surface2: #fbfbf9;
+      --offset: #f3f0ec; --border: #d4d1ca;
+      --text: #28251d; --muted: #6f6d68;
+      --primary: #01696f; --primary-h: #0c4e54; --primary-hl: #cedcd8;
+      --ok: #437a22; --err: #a12c7b;
+      --sh1: 0 1px 3px rgba(0,0,0,.07); --sh2: 0 8px 24px rgba(0,0,0,.09);
+    }
+    [data-theme="dark"] {
+      --bg: #171614; --surface: #1c1b19; --surface2: #201f1d;
+      --offset: #262320; --border: #393836;
+      --text: #eeece8; --muted: #b6b3ad;
+      --primary: #4f98a3; --primary-h: #227f8b; --primary-hl: #313b3b;
+      --ok: #7fb35d; --err: #d163a7;
+      --sh1: 0 1px 3px rgba(0,0,0,.3); --sh2: 0 10px 28px rgba(0,0,0,.4);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Work Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.55;font-size:1rem}
+    button,input,select{font:inherit;color:inherit}
+    .app{max-width:1400px;margin:0 auto;padding:1.5rem}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
+    .brand{display:flex;align-items:center;gap:.85rem}
+    .logo{width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,var(--primary),#5aa6ac);display:grid;place-items:center;color:#fff;font-weight:700;font-size:1.25rem;box-shadow:var(--sh2);flex-shrink:0}
+    h1{font-family:'Outfit',sans-serif;font-size:1.75rem;line-height:1.1}
+    .sub{color:var(--muted);font-size:.93rem;margin-top:.15rem}
+    .acts{display:flex;gap:.75rem;flex-wrap:wrap}
+    .btn{border:none;border-radius:.65rem;padding:.7rem 1.1rem;background:var(--offset);color:var(--text);cursor:pointer;box-shadow:var(--sh1);transition:.18s;font-weight:500;font-size:.95rem}
+    .btn:hover{transform:translateY(-1px);box-shadow:var(--sh2)}
+    .btn:active{transform:none}
+    .btn.p{background:var(--primary);color:#fff}
+    .btn.p:hover{background:var(--primary-h)}
+    .btn.d{background:var(--err);color:#fff}
+    .btn.s{padding:.45rem .8rem;font-size:.88rem}
+    .grid{display:grid;grid-template-columns:340px 1fr 340px;gap:1.5rem}
+    .panel{background:var(--surface);border:1px solid var(--border);border-radius:1rem;padding:1.25rem;box-shadow:var(--sh1)}
+    .panel h2{font-family:'Outfit',sans-serif;font-size:1.15rem;margin-bottom:1rem}
+    .splist,.reclist{display:flex;flex-direction:column;gap:.65rem}
+    .spitem,.recitem{display:flex;align-items:center;justify-content:space-between;gap:.75rem;background:var(--surface2);padding:.8rem;border-radius:.65rem;border:1px solid rgba(0,0,0,.05)}
+    .spname{font-weight:600;font-size:.97rem}
+    .spmeta{font-size:.83rem;color:var(--muted)}
+    .badge{padding:.18rem .55rem;border-radius:999px;background:var(--primary-hl);color:var(--primary);font-size:.78rem;font-weight:700;white-space:nowrap}
+    .tbar{display:flex;gap:.65rem;flex-wrap:wrap;margin-bottom:1rem}
+    .field{margin-bottom:1rem}
+    .field label{display:block;font-size:.9rem;font-weight:600;margin-bottom:.35rem}
+    input[type=text],select{width:100%;padding:.7rem .85rem;border:1px solid var(--border);border-radius:.65rem;background:var(--surface2);color:var(--text);outline:none;transition:.15s}
+    input[type=text]:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-hl)}
+    input[type=range]{width:100%;accent-color:var(--primary);margin-top:.3rem}
+    .folder{margin-bottom:.7rem;border:1px dashed var(--border);border-radius:.65rem;padding:.7rem}
+    .flabel{font-weight:700;font-size:.87rem;color:var(--muted);margin-bottom:.5rem}
+    .fchildren{padding-left:.75rem;display:flex;flex-direction:column;gap:.4rem}
+    .fbtn{width:100%;text-align:left;padding:.65rem .8rem;border-radius:.4rem;border:1px solid var(--border);background:var(--surface2);cursor:pointer;font-size:.92rem;transition:.15s}
+    .fbtn:hover{background:var(--offset)}
+    .fbtn.active{background:var(--primary-hl);border-color:var(--primary);color:var(--primary-h);font-weight:700}
+    .status{margin-top:1rem;padding:.85rem 1rem;border-radius:.65rem;background:var(--offset);color:var(--muted);font-size:.93rem}
+    .status.ok{background:rgba(67,122,34,.12);color:var(--ok)}
+    .status.err{background:rgba(161,44,123,.12);color:var(--err)}
+    .note{font-size:.88rem;color:var(--muted);line-height:1.6}
+    .tiny{font-size:.82rem;color:var(--muted)}
+    code{background:var(--offset);padding:.1rem .4rem;border-radius:4px;font-size:.83rem}
+    hr{border:none;border-top:1px solid var(--border);margin:1rem 0}
+    .mt{color:var(--muted);font-size:.92rem}
+    @media(max-width:1100px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">S</div>
+      <div>
+        <h1>SonosDurchsage</h1>
+        <div class="sub">Lokales Durchsagesystem fuer SONOS im Netzwerk</div>
+      </div>
+    </div>
+    <div class="acts">
+      <button class="btn" data-theme-toggle title="Design wechseln">&#127769;</button>
+      <button class="btn p" onclick="discoverSpeakers()">&#128269; Lautsprecher suchen</button>
+      <button class="btn d" onclick="stopPlayback()">&#9209; Alle stoppen</button>
+    </div>
+  </header>
+
+  <main class="grid">
+    <section class="panel">
+      <h2>&#128266; SONOS Lautsprecher</h2>
+      <div class="splist" id="spList"><div class="mt">Klicke &bdquo;Lautsprecher suchen&ldquo; &hellip;</div></div>
+    </section>
+
+    <section class="panel">
+      <h2>&#128226; Durchsagen</h2>
+      <div class="tbar">
+        <button class="btn s" onclick="loadQuick()">&#8635; Schnelldurchsagen</button>
+        <button class="btn s" onclick="loadRecs()">&#8635; Aufnahmen</button>
+      </div>
+      <div class="field">
+        <label for="gongSel">&#128276; Gong vor Durchsage</label>
+        <select id="gongSel"><option value="">Kein Gong</option></select>
+      </div>
+      <div class="field">
+        <label>&#128265; Lautstaerke: <span id="volVal">25</span>%</label>
+        <input type="range" min="1" max="100" value="25" id="volRange" oninput="volVal.textContent=this.value">
+      </div>
+      <div class="field">
+        <label>&#128193; Schnelldurchsagen</label>
+        <div id="quickTree"><div class="mt">Lade &hellip;</div></div>
+      </div>
+      <div class="field">
+        <label>&#127908; Aufnahmen</label>
+        <div class="reclist" id="recList"><div class="mt">Keine Aufnahmen vorhanden.</div></div>
+      </div>
+      <button class="btn p" style="width:100%" onclick="playSelected()">&#9654; Ausgewaehlte Datei abspielen</button>
+      <div id="status" class="status">Bereit.</div>
+    </section>
+
+    <section class="panel">
+      <h2>&#127908; Aufnahme</h2>
+      <div class="tbar">
+        <button class="btn p" onclick="startRec()">&#9210; Starten</button>
+        <button class="btn" onclick="stopRec()">&#9209; Stoppen &amp; speichern</button>
+      </div>
+      <p class="note">Aufnahmen werden als WAV gespeichert und erscheinen direkt im Aufnahmen-Panel &ndash; danach sofort auf SONOS abspielbar.</p>
+      <hr>
+      <div class="note" style="margin-bottom:.75rem"><strong>Livewiedergabe:</strong> SONOS unterstuetzt keine direkte Mikrofon-Einspeisung. Loesung: aufnehmen &rarr; Aufnahme sofort abspielen.</div>
+      <hr>
+      <div class="field">
+        <label for="newFolder">&#128194; Neuen Ordner anlegen</label>
+        <input type="text" id="newFolder" placeholder="z. B. Schule">
+      </div>
+      <button class="btn" onclick="createFolder()">Ordner erstellen</button>
+      <hr>
+      <div class="tiny">Gong-Dateien &rarr; <code>assets/gongs/</code><br>Durchsagen &rarr; <code>schnelldurchsagen/Ordner/</code></div>
+    </section>
+  </main>
+</div>
+
+<script>
+  let selPath = '', selSpeakers = new Set();
+  const statusEl = document.getElementById('status');
+
+  function setStatus(msg, type='') {
+    statusEl.textContent = msg;
+    statusEl.className = 'status' + (type ? ' '+type : '');
+  }
+
+  async function api(url, opts={}) {
+    const r = await fetch(url, {headers:{'Content-Type':'application/json'}, ...opts});
+    return r.json();
+  }
+
+  function renderSpeakers(list) {
+    const el = document.getElementById('spList');
+    if (!list.length) { el.innerHTML='<div class="mt">Keine SONOS-Geraete gefunden.</div>'; return; }
+    el.innerHTML = list.map(s => `
+      <div class="spitem">
+        <div style="display:flex;gap:.65rem;align-items:flex-start;flex:1">
+          <input type="checkbox" style="width:17px;height:17px;margin-top:3px;accent-color:var(--primary)"
+            onchange="toggleSp('${s.ip}',this.checked)">
+          <div><div class="spname">${s.name}</div><div class="spmeta">${s.ip} &middot; ${s.group}</div></div>
+        </div>
+        <span class="badge">${s.volume}%</span>
+      </div>`).join('');
+  }
+
+  function toggleSp(ip, checked) {
+    if (checked) selSpeakers.add(ip); else selSpeakers.delete(ip);
+  }
+
+  async function discoverSpeakers() {
+    setStatus('Suche Lautsprecher im Netzwerk ...');
+    const d = await api('/api/speakers/discover');
+    renderSpeakers(d.speakers||[]);
+    if (!d.soco_available) setStatus('soco fehlt -> pip install soco', 'err');
+    else setStatus(`${(d.speakers||[]).length} Lautsprecher gefunden.`, 'ok');
+  }
+
+  async function loadGongs() {
+    const d = await api('/api/gongs');
+    const sel = document.getElementById('gongSel');
+    sel.innerHTML = '<option value="">Kein Gong</option>' +
+      (d.gongs||[]).map(g=>`<option value="${g.path}">${g.name}</option>`).join('');
+  }
+
+  function makeFileBtn(file) {
+    const btn = document.createElement('button');
+    btn.className = 'fbtn';
+    btn.textContent = '&#9835; ' + file.name;
+    btn.onclick = () => {
+      selPath = file.path;
+      document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));
+      document.querySelectorAll('.recitem .btn').forEach(b=>b.classList.remove('p'));
+      btn.classList.add('active');
+      setStatus('Ausgewaehlt: ' + file.name, 'ok');
+    };
+    return btn;
+  }
+
+  function renderFolder(node, container, isRoot=false) {
+    if (!isRoot) {
+      const wrap = document.createElement('div');
+      wrap.className = 'folder';
+      wrap.innerHTML = `<div class="flabel">&#128193; ${node.name}</div>`;
+      const ch = document.createElement('div'); ch.className='fchildren';
+      (node.files||[]).forEach(f=>ch.appendChild(makeFileBtn(f)));
+      (node.folders||[]).forEach(f=>renderFolder(f,ch));
+      wrap.appendChild(ch); container.appendChild(wrap);
+    } else {
+      (node.files||[]).forEach(f=>container.appendChild(makeFileBtn(f)));
+      (node.folders||[]).forEach(f=>renderFolder(f,container));
+    }
+  }
+
+  async function loadQuick() {
+    const d = await api('/api/schnelldurchsagen');
+    const c = document.getElementById('quickTree'); c.innerHTML='';
+    if (!(d.files||[]).length && !(d.folders||[]).length) {
+      c.innerHTML='<div class="mt">Noch keine Dateien in schnelldurchsagen/</div>'; return;
+    }
+    renderFolder(d, c, true);
+  }
+
+  async function loadRecs() {
+    const d = await api('/api/recordings');
+    const el = document.getElementById('recList');
+    const recs = d.recordings||[];
+    if (!recs.length) { el.innerHTML='<div class="mt">Noch keine Aufnahmen.</div>'; return; }
+    el.innerHTML = recs.map(r=>`
+      <div class="recitem">
+        <div><div class="spname">${r.name}</div><div class="spmeta">${Math.round(r.size/1024)} KB</div></div>
+        <button class="btn s" onclick="selRec('${r.path}',this)">Waehlen</button>
+      </div>`).join('');
+  }
+
+  function selRec(path, btn) {
+    selPath = path;
+    document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.recitem .btn').forEach(b=>b.classList.remove('p'));
+    btn.classList.add('p');
+    setStatus('Aufnahme gewaehlt: '+path.split('/').pop(), 'ok');
+  }
+
+  async function startRec() {
+    const d = await api('/api/record/start',{method:'POST',body:'{}'});
+    if (d.success) setStatus('Aufnahme laeuft ...', 'ok');
+    else setStatus(d.error||'Fehler beim Starten.', 'err');
+  }
+
+  async function stopRec() {
+    const d = await api('/api/record/stop',{method:'POST',body:'{}'});
+    if (d.success) { setStatus('Gespeichert: '+d.filename,'ok'); await loadRecs(); }
+    else setStatus(d.error||'Fehler beim Stoppen.','err');
+  }
+
+  async function playSelected() {
+    if (!selPath) { setStatus('Bitte zuerst eine Datei auswaehlen.','err'); return; }
+    if (!selSpeakers.size) { setStatus('Bitte mindestens einen Lautsprecher auswaehlen.','err'); return; }
+    setStatus('Durchsage wird gestartet ...');
+    const d = await api('/api/play',{
+      method:'POST',
+      body: JSON.stringify({
+        audio_path: selPath,
+        gong_path: document.getElementById('gongSel').value,
+        speakers: Array.from(selSpeakers),
+        volume: parseInt(document.getElementById('volRange').value,10)
+      })
+    });
+    if (d.success) setStatus('Durchsage gestartet.','ok');
+    else setStatus(d.error||'Fehler bei der Wiedergabe.','err');
+  }
+
+  async function stopPlayback() {
+    const d = await api('/api/stop',{method:'POST',body:JSON.stringify({speakers:Array.from(selSpeakers)})});
+    if (d.success) setStatus('Wiedergabe gestoppt.','ok');
+    else setStatus(d.error||'Stoppen fehlgeschlagen.','err');
+  }
+
+  async function createFolder() {
+    const name = document.getElementById('newFolder').value.trim();
+    if (!name) { setStatus('Bitte einen Ordnernamen eingeben.','err'); return; }
+    const d = await api('/api/folder/create',{method:'POST',body:JSON.stringify({name})});
+    if (d.success) { document.getElementById('newFolder').value=''; setStatus('Ordner erstellt.','ok'); await loadQuick(); }
+    else setStatus(d.error||'Fehler.','err');
+  }
+
+  document.querySelector('[data-theme-toggle]').addEventListener('click', () => {
+    const root = document.documentElement;
+    const dark = root.getAttribute('data-theme')==='dark';
+    root.setAttribute('data-theme', dark?'light':'dark');
+    document.querySelector('[data-theme-toggle]').textContent = dark ? '&#127769;' : '&#9728;&#65039;';
+  });
+
+  loadGongs();
+  loadQuick();
+  loadRecs();
+  discoverSpeakers();
+</script>
+</body>
+</html>
