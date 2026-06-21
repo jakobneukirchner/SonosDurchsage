@@ -55,6 +55,14 @@ recording_state = {
 }
 
 
+def safe_get(device, attr, default=""):
+    """Sicherer Attribut-Zugriff auf SoCo-Objekte."""
+    try:
+        return getattr(device, attr)
+    except Exception:
+        return default
+
+
 # ─── Hilfsfunktionen ────────────────────────────────────────────────────────
 
 def get_sonos_speakers():
@@ -66,15 +74,24 @@ def get_sonos_speakers():
             if devices:
                 for device in devices:
                     try:
+                        # model_name existiert in neueren soco-Versionen nicht mehr
+                        # speaker_info liefert zuverlässige Gerätedaten
+                        model = ""
+                        try:
+                            info = device.get_speaker_info(refresh=True)
+                            model = info.get("model_name", info.get("model_number", "SONOS"))
+                        except Exception:
+                            model = "SONOS"
+
                         speakers.append({
-                            "uid": device.uid,
-                            "name": device.player_name,
-                            "ip": device.ip_address,
-                            "volume": device.volume,
-                            "model": device.model_name
+                            "uid": safe_get(device, "uid", f"uid-{device.ip_address}"),
+                            "name": safe_get(device, "player_name", device.ip_address),
+                            "ip": safe_get(device, "ip_address", ""),
+                            "volume": safe_get(device, "volume", 30),
+                            "model": model
                         })
                     except Exception as e:
-                        print(f"[WARN] Lautsprecher-Fehler: {e}")
+                        print(f"[WARN] Lautsprecher konnte nicht geladen werden: {e}")
         except Exception as e:
             print(f"[ERROR] SONOS Discovery: {e}")
     else:
@@ -95,17 +112,22 @@ def play_on_sonos(speaker_uids, audio_file_path, volume=None, gong_file=None):
     results = []
     try:
         devices = soco.discover(timeout=5) or []
-        selected = [d for d in devices if d.uid in speaker_uids]
+        selected = [d for d in devices if safe_get(d, "uid") in speaker_uids]
 
         # Lokale Datei über HTTP-Server bereitstellen
         import socket
-        hostname = socket.gethostname()
-        local_ip = socket.gethostbyname(hostname)
+        local_ip = "192.168.1.85"  # Wird dynamisch ermittelt
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            local_ip = s.getsockname()[0]
+            s.close()
+        except Exception:
+            pass
         base_url = f"http://{local_ip}:5000"
 
         for device in selected:
             try:
-                orig_volume = device.volume
                 if volume is not None:
                     device.volume = int(volume)
 
@@ -115,17 +137,17 @@ def play_on_sonos(speaker_uids, audio_file_path, volume=None, gong_file=None):
                     if os.path.exists(gong_path):
                         gong_url = f"{base_url}/audio/gongs/{gong_file}"
                         device.play_uri(gong_url)
-                        # Warten bis Gong fertig
                         time.sleep(get_audio_duration(gong_path) + 0.5)
 
                 # Hauptdurchsage
                 rel_path = os.path.relpath(audio_file_path, BASE_DIR)
-                audio_url = f"{base_url}/audio/serve?path={rel_path}"
+                rel_path_url = rel_path.replace("\\", "/")
+                audio_url = f"{base_url}/audio/serve?path={rel_path_url}"
                 device.play_uri(audio_url)
 
-                results.append({"speaker": device.player_name, "success": True})
+                results.append({"speaker": safe_get(device, "player_name", device.ip_address), "success": True})
             except Exception as e:
-                results.append({"speaker": device.player_name, "success": False, "error": str(e)})
+                results.append({"speaker": safe_get(device, "player_name", "?"), "success": False, "error": str(e)})
 
         return {"success": True, "results": results}
     except Exception as e:
@@ -158,7 +180,7 @@ def get_folder_structure(base_path):
                     files.append({
                         "name": f.stem,
                         "filename": f.name,
-                        "path": str(f.relative_to(BASE_DIR)),
+                        "path": str(f.relative_to(BASE_DIR)).replace("\\", "/"),
                         "size": f.stat().st_size
                     })
             result.append({
@@ -171,7 +193,7 @@ def get_folder_structure(base_path):
                 "files": [{
                     "name": item.stem,
                     "filename": item.name,
-                    "path": str(item.relative_to(BASE_DIR)),
+                    "path": str(item.relative_to(BASE_DIR)).replace("\\", "/"),
                     "size": item.stat().st_size
                 }]
             })
@@ -200,7 +222,7 @@ def api_set_volume(uid):
     try:
         devices = soco.discover(timeout=3) or []
         for d in devices:
-            if d.uid == uid:
+            if safe_get(d, "uid") == uid:
                 d.volume = int(volume)
                 return jsonify({"success": True})
         return jsonify({"success": False, "error": "Lautsprecher nicht gefunden"})
@@ -211,9 +233,10 @@ def api_set_volume(uid):
 @app.route("/api/gongs")
 def api_gongs():
     gongs = []
-    for f in sorted(GONGS_DIR.iterdir()) if GONGS_DIR.exists() else []:
-        if f.suffix.lower() in [".mp3", ".wav", ".ogg"]:
-            gongs.append({"name": f.stem, "filename": f.name})
+    if GONGS_DIR.exists():
+        for f in sorted(GONGS_DIR.iterdir()):
+            if f.suffix.lower() in [".mp3", ".wav", ".ogg"]:
+                gongs.append({"name": f.stem, "filename": f.name})
     return jsonify({"gongs": gongs})
 
 
@@ -232,7 +255,7 @@ def api_recordings():
                 recordings.append({
                     "name": f.stem,
                     "filename": f.name,
-                    "path": str(f.relative_to(BASE_DIR)),
+                    "path": str(f.relative_to(BASE_DIR)).replace("\\", "/"),
                     "size": f.stat().st_size,
                     "mtime": f.stat().st_mtime
                 })
@@ -263,7 +286,7 @@ def api_play():
 @app.route("/api/record/start", methods=["POST"])
 def api_record_start():
     if not PYAUDIO_AVAILABLE:
-        return jsonify({"success": False, "error": "pyaudio nicht installiert"})
+        return jsonify({"success": False, "error": "pyaudio nicht installiert. Bitte: pip install pyaudio"})
     if recording_state["active"]:
         return jsonify({"success": False, "error": "Aufnahme läuft bereits"})
 
@@ -313,7 +336,6 @@ def api_record_stop():
         if pa:
             pa.terminate()
 
-        # Dateiname mit Zeitstempel
         ts = time.strftime("%Y%m%d_%H%M%S")
         wav_path = RECORDINGS_DIR / f"aufnahme_{ts}.wav"
 
@@ -323,7 +345,6 @@ def api_record_stop():
             wf.setframerate(44100)
             wf.writeframes(b''.join(recording_state["frames"]))
 
-        # MP3-Konvertierung falls pydub verfügbar
         final_path = wav_path
         if PYDUB_AVAILABLE:
             try:
@@ -332,13 +353,13 @@ def api_record_stop():
                 wav_path.unlink()
                 final_path = mp3_path
             except Exception:
-                pass  # WAV behalten falls MP3-Export fehlschlägt
+                pass
 
-        recording_state["last_file"] = str(final_path.relative_to(BASE_DIR))
+        recording_state["last_file"] = str(final_path.relative_to(BASE_DIR)).replace("\\", "/")
         return jsonify({
             "success": True,
             "filename": final_path.name,
-            "path": str(final_path.relative_to(BASE_DIR)),
+            "path": str(final_path.relative_to(BASE_DIR)).replace("\\", "/"),
             "duration": len(recording_state["frames"]) * 1024 / 44100
         })
     except Exception as e:
