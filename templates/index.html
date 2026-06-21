@@ -4,356 +4,713 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Durchsageanlage</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;overflow:hidden;user-select:none}
+/* ===== RESET ===== */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:#080f1a;overflow:hidden;font-family:'Noto Sans',sans-serif;color:#c8d8f0;-webkit-font-smoothing:antialiased}
+
+/* ===== CSS VARS ===== */
 :root{
-  --bg:#07142a;--bg2:#0d1e3a;--panel-bg:#0a1a33;--border:#1a3060;
-  --btn-top:#5b8ee8;--btn-mid:#2d60b8;--btn-bot:#1a3c80;--btn-border:#7aaaff;--btn-txt:#ffffff;
-  --green-top:#6ac93a;--green-mid:#3e8c18;--green-bot:#255c0c;
-  --red-top:#e05a5a;--red-mid:#b02020;--red-bot:#7a1414;
-  --amber:#d4a020;--muted:#7a9ab8;--text:#e8f0fc;
-  --title-h:42px;--status-h:32px;--font:'Noto Sans',Arial,sans-serif;
+  /* Hauptfarben */
+  --c-bg:        #080f1a;
+  --c-panel:     #0c1628;
+  --c-panel2:    #101e36;
+  --c-border:    #1c3060;
+  --c-border2:   #243870;
+
+  /* Akzente */
+  --c-blue:      #4a90d9;
+  --c-blue-glow: rgba(74,144,217,.25);
+  --c-green:     #3ecf6a;
+  --c-green-glow:rgba(62,207,106,.2);
+  --c-red:       #e05050;
+  --c-red-glow:  rgba(224,80,80,.2);
+  --c-amber:     #f0a030;
+  --c-amber-glow:rgba(240,160,48,.2);
+  --c-cyan:      #30d0e0;
+
+  /* Text */
+  --c-text:      #d0e4f8;
+  --c-muted:     #5a7a9a;
+  --c-dim:       #324860;
+
+  /* Schriften */
+  --f-mono:     'Share Tech Mono', monospace;
+  --f-ui:       'Noto Sans', sans-serif;
 }
+
+/* ===== SCAN-LINE OVERLAY ===== */
+body::after{
+  content:'';
+  position:fixed;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07) 2px,rgba(0,0,0,.07) 4px);
+  pointer-events:none;z-index:9999;
+}
+
+/* ===== LAYOUT ===== */
 .frame{
-  display:grid;grid-template-rows:var(--title-h) 1fr var(--status-h);
-  width:100vw;height:100vh;background:var(--bg);font-family:var(--font);color:var(--text);
+  display:grid;
+  grid-template-rows:52px 1fr 30px;
+  width:100vw;height:100vh;
 }
+.main{
+  display:grid;
+  grid-template-columns:280px 1fr;
+  overflow:hidden;
+}
+
+/* ===== TITELLEISTE ===== */
 .titlebar{
-  background:var(--bg2);border-bottom:2px solid var(--border);
-  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:0 16px;gap:8px;
+  background:linear-gradient(180deg,#111e38 0%,#0c1628 100%);
+  border-bottom:2px solid var(--c-border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;
+  box-shadow:0 2px 20px rgba(74,144,217,.1);
 }
-.tl-left{font-size:13px;color:var(--muted)}
-.tl-center{font-size:17px;font-weight:700;letter-spacing:.1em;text-align:center;white-space:nowrap;}
-.tl-right{font-size:13px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
-.main{display:grid;grid-template-columns:260px 1fr;overflow:hidden;}
+.tb-logo{
+  display:flex;align-items:center;gap:10px;
+}
+.tb-logo-icon{
+  width:28px;height:28px;
+  background:linear-gradient(135deg,var(--c-blue),var(--c-cyan));
+  border-radius:4px;
+  display:grid;place-items:center;
+  font-size:16px;
+  box-shadow:0 0 10px var(--c-blue-glow);
+}
+.tb-title{
+  font-family:var(--f-mono);
+  font-size:15px;letter-spacing:.12em;
+  color:var(--c-cyan);
+  text-shadow:0 0 10px rgba(48,208,224,.4);
+}
+.tb-center{
+  font-family:var(--f-mono);
+  font-size:12px;letter-spacing:.15em;
+  color:var(--c-muted);
+}
+.tb-right{
+  display:flex;align-items:center;gap:16px;
+}
+.tb-clock{
+  font-family:var(--f-mono);
+  font-size:17px;font-weight:700;
+  color:var(--c-blue);
+  text-shadow:0 0 8px var(--c-blue-glow);
+  letter-spacing:.1em;
+}
+.tb-date{
+  font-family:var(--f-mono);
+  font-size:11px;color:var(--c-muted);text-align:right;
+}
+
+/* ===== SIDEBAR ===== */
 .sidebar{
-  background:var(--panel-bg);border-right:2px solid var(--border);
+  background:var(--c-panel);
+  border-right:2px solid var(--c-border);
   display:flex;flex-direction:column;overflow:hidden;
 }
-.sb-tabs{display:flex;border-bottom:1px solid var(--border);}
-.sbtab{
-  flex:1;padding:8px 4px;font-size:12px;font-weight:700;letter-spacing:.06em;
-  text-transform:uppercase;text-align:center;background:transparent;border:none;
-  color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;
-  transition:color .1s,border-color .1s;
+.sb-header{
+  padding:12px 14px 8px;
+  border-bottom:1px solid var(--c-border);
+  display:flex;align-items:center;justify-content:space-between;
 }
-.sbtab.active{color:var(--text);border-bottom-color:var(--btn-top)}
-.sb-body{
-  flex:1;overflow-y:auto;padding:12px;
-  display:flex;flex-direction:column;gap:10px;
+.sb-header-title{
+  font-family:var(--f-mono);
+  font-size:11px;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--c-cyan);
 }
-.sb-body::-webkit-scrollbar{width:4px}
-.sb-body::-webkit-scrollbar-track{background:var(--bg)}
-.sb-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
-.sect-head{
-  font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
-  color:var(--muted);border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:2px;
+.sb-scroll{
+  flex:1;overflow-y:auto;padding:10px;
+  display:flex;flex-direction:column;gap:12px;
 }
-.hbtn{
-  display:inline-flex;align-items:center;justify-content:center;gap:6px;
-  background:linear-gradient(180deg,var(--btn-top) 0%,var(--btn-mid) 55%,var(--btn-bot) 100%);
-  border:1px solid var(--btn-border);border-bottom-color:var(--btn-bot);border-radius:5px;
-  color:var(--btn-txt);font-family:var(--font);font-size:13px;font-weight:700;
-  padding:8px 14px;cursor:pointer;white-space:nowrap;
-  box-shadow:0 2px 5px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.18);
-  transition:filter .08s,transform .06s;line-height:1;
+.sb-scroll::-webkit-scrollbar{width:3px}
+.sb-scroll::-webkit-scrollbar-thumb{background:var(--c-border2);border-radius:2px}
+
+/* ===== SECTION ===== */
+.section-label{
+  font-family:var(--f-mono);
+  font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--c-dim);padding:0 2px 5px;
+  border-bottom:1px solid var(--c-border);
+  margin-bottom:6px;
+  display:flex;align-items:center;gap:6px;
 }
-.hbtn:hover{filter:brightness(1.18)}
-.hbtn:active{filter:brightness(.8);transform:translateY(1px);box-shadow:0 1px 2px rgba(0,0,0,.5),inset 0 1px 0 rgba(0,0,0,.1)}
-.hbtn.green{
-  background:linear-gradient(180deg,var(--green-top) 0%,var(--green-mid) 55%,var(--green-bot) 100%);
-  border-color:#90d060;border-bottom-color:var(--green-bot);
-  box-shadow:0 0 8px rgba(80,200,40,.3),0 2px 4px rgba(0,0,0,.5);
+.section-label::before{
+  content:'';
+  display:inline-block;width:6px;height:6px;
+  background:var(--c-blue);border-radius:50%;
+  box-shadow:0 0 5px var(--c-blue);
 }
-.hbtn.red{
-  background:linear-gradient(180deg,var(--red-top) 0%,var(--red-mid) 55%,var(--red-bot) 100%);
-  border-color:#f08080;border-bottom-color:var(--red-bot);
+
+/* ===== SPEAKER KACHELN ===== */
+.sp-list{display:flex;flex-direction:column;gap:4px}
+.sp-tile{
+  position:relative;
+  background:var(--c-panel2);
+  border:1px solid var(--c-border);
+  border-radius:6px;
+  padding:9px 12px;
+  cursor:pointer;
+  transition:all .15s;
+  display:flex;align-items:center;gap:10px;
+  overflow:hidden;
 }
-.hbtn.full{width:100%}
-.hbtn.xl{font-size:16px;padding:13px 20px}
-.btn-row{display:flex;gap:6px;flex-wrap:wrap}
-select{
-  width:100%;padding:7px 10px;
-  background:linear-gradient(180deg,var(--btn-top) 0%,var(--btn-mid) 55%,var(--btn-bot) 100%);
-  border:1px solid var(--btn-border);border-radius:5px;color:#fff;
-  font-size:13px;font-weight:700;font-family:var(--font);
-  outline:none;cursor:pointer;appearance:none;-webkit-appearance:none;
-  box-shadow:0 2px 4px rgba(0,0,0,.4);
+.sp-tile::before{
+  content:'';
+  position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--c-dim);
+  transition:background .15s;
 }
-select option{background:#0d2050;color:#fff}
-input[type=text]{
-  width:100%;padding:7px 10px;
-  background:rgba(10,26,60,.7);border:1px solid var(--border);
-  border-radius:5px;color:#fff;font-size:13px;font-family:var(--font);outline:none;
+.sp-tile:hover{border-color:var(--c-blue);background:rgba(74,144,217,.08)}
+.sp-tile.active{border-color:var(--c-green);background:rgba(62,207,106,.08)}
+.sp-tile.active::before{background:var(--c-green);box-shadow:0 0 8px var(--c-green)}
+.sp-led{
+  width:10px;height:10px;border-radius:50%;flex-shrink:0;
+  background:#1a2a1a;border:1px solid var(--c-dim);
+  transition:all .2s;
 }
-input[type=text]:focus{border-color:var(--btn-top)}
-.vol-row{display:flex;align-items:center;gap:8px}
-.vol-lbl{font-size:12px;color:var(--muted);width:28px;flex-shrink:0;text-align:right}
-input[type=range]{flex:1;height:5px;accent-color:var(--btn-top);cursor:pointer;}
-.vol-val{
-  background:linear-gradient(180deg,var(--btn-top) 0%,var(--btn-mid) 70%,var(--btn-bot) 100%);
-  border:1px solid var(--btn-border);border-radius:4px;
-  font-size:12px;font-weight:700;padding:3px 7px;min-width:44px;text-align:center;
+.sp-tile.active .sp-led{
+  background:var(--c-green);
+  border-color:var(--c-green);
+  box-shadow:0 0 8px var(--c-green),0 0 16px rgba(62,207,106,.4);
 }
-.sp-grid{display:flex;flex-direction:column;gap:5px}
-.sp-card{
-  display:flex;align-items:center;gap:8px;
-  background:rgba(15,30,70,.6);border:1px solid var(--border);
-  border-radius:5px;padding:7px 10px;cursor:pointer;
-  transition:border-color .1s,background .1s;
-}
-.sp-card:hover{background:rgba(45,96,184,.2);border-color:var(--btn-top)}
-.sp-card.on{background:rgba(40,100,20,.3);border-color:#70d030;}
-.sp-ind{width:10px;height:10px;border-radius:50%;background:#333;border:1px solid #555;flex-shrink:0;}
-.sp-card.on .sp-ind{background:#60d030;border-color:#90f050;box-shadow:0 0 5px #60d030}
 .sp-info{flex:1;overflow:hidden}
-.sp-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sp-sub{font-size:11px;color:var(--muted)}
+.sp-name{
+  font-size:13px;font-weight:700;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  color:var(--c-text);
+}
+.sp-meta{font-family:var(--f-mono);font-size:10px;color:var(--c-muted);margin-top:1px}
 .sp-vol{
-  background:linear-gradient(180deg,var(--btn-top) 0%,var(--btn-mid) 70%,var(--btn-bot) 100%);
-  border:1px solid var(--btn-border);border-radius:4px;font-size:11px;font-weight:700;padding:2px 6px;
+  font-family:var(--f-mono);font-size:11px;
+  color:var(--c-blue);background:rgba(74,144,217,.1);
+  border:1px solid rgba(74,144,217,.2);border-radius:3px;
+  padding:2px 6px;flex-shrink:0;
 }
-.rec-area{display:flex;flex-direction:column;align-items:center;gap:6px}
-.rec-btn{
-  width:64px;height:64px;border-radius:50%;
-  background:linear-gradient(180deg,var(--red-top) 0%,var(--red-mid) 55%,var(--red-bot) 100%);
-  border:2px solid #f08080;
-  box-shadow:0 2px 6px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1);
-  display:grid;place-items:center;cursor:pointer;font-size:28px;transition:filter .1s;
+
+/* ===== BUTTONS ===== */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  border-radius:5px;border:1px solid;
+  font-family:var(--f-ui);font-size:12px;font-weight:700;
+  letter-spacing:.05em;padding:8px 14px;
+  cursor:pointer;white-space:nowrap;
+  transition:all .12s;line-height:1;
 }
-.rec-btn:hover{filter:brightness(1.15)}
-.rec-btn.recording{animation:rpulse 1s ease-in-out infinite;}
-@keyframes rpulse{
-  0%,100%{box-shadow:0 0 6px rgba(220,60,60,.4)}
-  50%{box-shadow:0 0 22px rgba(255,80,80,.9),0 0 40px rgba(255,60,60,.4)}
+.btn-blue{
+  background:rgba(74,144,217,.12);
+  border-color:rgba(74,144,217,.35);color:var(--c-blue);
 }
-.rec-lbl{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
-.rec-lbl.active{color:#f07070;font-weight:700}
-.content-area{display:flex;flex-direction:column;overflow:hidden;background:var(--bg);}
-.content-tabs{display:flex;border-bottom:2px solid var(--border);background:var(--bg2);}
+.btn-blue:hover{background:rgba(74,144,217,.22);border-color:var(--c-blue);box-shadow:0 0 10px var(--c-blue-glow)}
+.btn-blue:active{background:rgba(74,144,217,.3)}
+
+.btn-green{
+  background:rgba(62,207,106,.1);
+  border-color:rgba(62,207,106,.35);color:var(--c-green);
+}
+.btn-green:hover{background:rgba(62,207,106,.22);border-color:var(--c-green);box-shadow:0 0 10px var(--c-green-glow)}
+.btn-green:active{background:rgba(62,207,106,.3)}
+
+.btn-red{
+  background:rgba(224,80,80,.1);
+  border-color:rgba(224,80,80,.35);color:var(--c-red);
+}
+.btn-red:hover{background:rgba(224,80,80,.22);border-color:var(--c-red);box-shadow:0 0 10px var(--c-red-glow)}
+.btn-red:active{background:rgba(224,80,80,.3)}
+
+.btn-amber{
+  background:rgba(240,160,48,.1);
+  border-color:rgba(240,160,48,.35);color:var(--c-amber);
+}
+.btn-amber:hover{background:rgba(240,160,48,.22);border-color:var(--c-amber)}
+
+.btn-full{width:100%}
+.btn-xl{font-size:15px;padding:13px 24px;letter-spacing:.08em}
+.btn-row{display:flex;gap:6px}
+
+/* ===== PLAY-BUTTON (Haupt) ===== */
+.play-master{
+  position:relative;
+  width:100%;padding:16px 24px;
+  background:rgba(62,207,106,.08);
+  border:1px solid rgba(62,207,106,.3);
+  border-radius:8px;
+  display:flex;align-items:center;gap:14px;
+  cursor:pointer;
+  transition:all .15s;
+  overflow:hidden;
+}
+.play-master::before{
+  content:'';
+  position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(62,207,106,.05),transparent);
+  transform:translateX(-100%);
+  transition:transform .4s;
+}
+.play-master:hover{border-color:var(--c-green);background:rgba(62,207,106,.14);box-shadow:0 0 20px rgba(62,207,106,.12)}
+.play-master:hover::before{transform:translateX(100%)}
+.play-master:active{transform:scale(.99)}
+.play-master.disabled{opacity:.4;cursor:not-allowed}
+.play-icon{
+  font-size:26px;color:var(--c-green);
+  text-shadow:0 0 10px var(--c-green);
+  flex-shrink:0;
+}
+.play-text{flex:1;text-align:left}
+.play-label{font-size:14px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;color:var(--c-green)}
+.play-sub{font-family:var(--f-mono);font-size:10px;color:var(--c-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ===== VOLUME ===== */
+.vol-wrap{display:flex;align-items:center;gap:8px}
+.vol-icon{font-size:14px;color:var(--c-muted);flex-shrink:0}
+.vol-slider{
+  flex:1;-webkit-appearance:none;appearance:none;
+  height:4px;background:var(--c-border2);
+  border-radius:2px;outline:none;cursor:pointer;
+}
+.vol-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;width:14px;height:14px;
+  background:var(--c-blue);border-radius:50%;
+  box-shadow:0 0 6px var(--c-blue);cursor:pointer;
+}
+.vol-val{
+  font-family:var(--f-mono);font-size:12px;
+  color:var(--c-blue);min-width:34px;text-align:right;
+}
+
+/* ===== SELECT ===== */
+.hmi-select{
+  width:100%;padding:7px 10px;
+  background:var(--c-panel2);
+  border:1px solid var(--c-border2);
+  border-radius:5px;color:var(--c-text);
+  font-size:12px;font-family:var(--f-ui);
+  outline:none;cursor:pointer;appearance:none;
+}
+.hmi-select:focus{border-color:var(--c-blue)}
+.hmi-select option{background:#0c1628}
+
+/* ===== INPUT ===== */
+.hmi-input{
+  width:100%;padding:7px 10px;
+  background:var(--c-panel2);
+  border:1px solid var(--c-border2);
+  border-radius:5px;color:var(--c-text);
+  font-size:12px;font-family:var(--f-ui);outline:none;
+}
+.hmi-input:focus{border-color:var(--c-blue)}
+
+/* ===== AUFNAHME-TASTE ===== */
+.rec-center{display:flex;flex-direction:column;align-items:center;gap:8px;padding:4px 0}
+.rec-circle{
+  width:60px;height:60px;border-radius:50%;
+  background:rgba(224,80,80,.1);
+  border:2px solid rgba(224,80,80,.3);
+  display:grid;place-items:center;
+  cursor:pointer;font-size:22px;
+  transition:all .15s;
+  color:var(--c-red);
+}
+.rec-circle:hover{background:rgba(224,80,80,.2);border-color:var(--c-red);box-shadow:0 0 15px var(--c-red-glow)}
+.rec-circle.on{animation:recpulse 1s ease-in-out infinite;border-color:var(--c-red)}
+@keyframes recpulse{
+  0%,100%{box-shadow:0 0 6px var(--c-red-glow)}
+  50%{box-shadow:0 0 22px rgba(224,80,80,.6),0 0 40px rgba(224,80,80,.3)}
+}
+.rec-label{font-family:var(--f-mono);font-size:10px;letter-spacing:.15em;color:var(--c-muted)}
+.rec-label.on{color:var(--c-red);font-weight:700}
+
+/* ===== MAIN CONTENT ===== */
+.content{
+  display:flex;flex-direction:column;overflow:hidden;
+  background:var(--c-bg);
+}
+.content-tabs{
+  display:flex;
+  background:var(--c-panel);
+  border-bottom:2px solid var(--c-border);
+  padding:0 16px;
+  gap:4px;
+}
 .ctab{
-  flex:1;padding:9px 8px;font-size:13px;font-weight:700;letter-spacing:.05em;
-  text-transform:uppercase;text-align:center;background:transparent;border:none;
-  color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;
-  transition:color .1s,border-color .1s;
+  padding:11px 16px;font-size:12px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;
+  background:transparent;border:none;
+  color:var(--c-muted);cursor:pointer;
+  border-bottom:2px solid transparent;
+  margin-bottom:-2px;
+  transition:color .12s,border-color .12s;
+  font-family:var(--f-ui);
 }
-.ctab.active{color:var(--text);border-bottom-color:var(--green-top)}
-.content-body{flex:1;overflow-y:auto;padding:12px 14px;}
+.ctab:hover{color:var(--c-text)}
+.ctab.active{color:var(--c-cyan);border-bottom-color:var(--c-cyan)}
+
+.content-body{
+  flex:1;overflow-y:auto;padding:14px 16px;
+}
 .content-body::-webkit-scrollbar{width:4px}
-.content-body::-webkit-scrollbar-track{background:var(--bg)}
-.content-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.content-body::-webkit-scrollbar-thumb{background:var(--c-border2);border-radius:2px}
+
+.tab-pane{display:none}
+.tab-pane.active{display:block}
 
 /* ===== DATEILISTE ===== */
 .flist{display:flex;flex-direction:column;gap:3px}
 .frow{
-  display:flex;align-items:center;gap:8px;
-  background:rgba(15,35,80,.5);border:1px solid var(--border);
-  border-radius:4px;padding:8px 12px;cursor:pointer;
-  transition:background .08s,border-color .08s;
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;
+  background:var(--c-panel2);
+  border:1px solid var(--c-border);
+  border-radius:5px;cursor:pointer;
+  transition:all .1s;
 }
-.frow:hover{background:rgba(45,96,184,.25);border-color:var(--btn-top)}
-.frow.active{background:rgba(50,120,20,.3);border-color:#70d030;color:#b8f060;}
-.frow-icon{font-size:16px;flex-shrink:0;opacity:.8}
-.frow-name{flex:1;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.frow-meta{font-size:11px;color:var(--muted);flex-shrink:0}
+.frow:hover{border-color:var(--c-blue);background:rgba(74,144,217,.06)}
+.frow.active{
+  border-color:var(--c-green);
+  background:rgba(62,207,106,.07);
+  box-shadow:0 0 8px rgba(62,207,106,.08);
+}
+.frow-icon{font-size:14px;opacity:.7;flex-shrink:0}
+.frow-name{
+  flex:1;font-size:13px;font-weight:600;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:var(--c-text);
+}
+.frow.active .frow-name{color:var(--c-green)}
+.frow-meta{font-family:var(--f-mono);font-size:10px;color:var(--c-muted);flex-shrink:0}
 
 /* ===== ORDNER ===== */
-.folder-block{margin-bottom:4px;}
+.folder-block{margin-bottom:5px}
 .folder-header{
-  display:flex;align-items:center;gap:6px;
-  padding:7px 10px;cursor:pointer;
-  background:rgba(10,25,70,.7);border:1px solid var(--border);
-  border-radius:4px;transition:background .1s,border-color .1s;
-  font-size:13px;font-weight:700;letter-spacing:.04em;
-  user-select:none;
+  display:flex;align-items:center;gap:8px;
+  padding:8px 12px;
+  background:rgba(74,144,217,.05);
+  border:1px solid var(--c-border2);
+  border-radius:5px;cursor:pointer;
+  transition:all .1s;
+  font-size:12px;font-weight:700;letter-spacing:.04em;
 }
-.folder-header:hover{background:rgba(45,96,184,.2);border-color:var(--btn-top)}
-.folder-arrow{font-size:10px;color:var(--muted);transition:transform .15s;flex-shrink:0}
+.folder-header:hover{border-color:var(--c-blue);background:rgba(74,144,217,.1)}
+.folder-arrow{
+  font-size:9px;color:var(--c-blue);
+  transition:transform .15s;flex-shrink:0;
+  font-family:var(--f-mono);
+}
 .folder-arrow.open{transform:rotate(90deg)}
-.folder-name-txt{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.folder-count{font-size:11px;color:var(--muted);flex-shrink:0}
-.folder-children{
-  padding-left:14px;margin-top:3px;
-  display:flex;flex-direction:column;gap:3px;
-  overflow:hidden;
-  transition:max-height .2s ease;
+.folder-name{flex:1;color:var(--c-text)}
+.folder-badge{
+  font-family:var(--f-mono);font-size:10px;
+  background:rgba(74,144,217,.15);border:1px solid rgba(74,144,217,.2);
+  border-radius:10px;padding:1px 7px;color:var(--c-blue);
 }
-.folder-children.collapsed{display:none;}
+.folder-children{padding-left:14px;margin-top:3px;display:flex;flex-direction:column;gap:3px}
+.folder-children.closed{display:none}
 
+/* ===== PLAY-BAR ===== */
 .play-bar{
-  padding:10px 14px;border-top:2px solid var(--border);background:var(--bg2);
-  display:flex;align-items:center;gap:10px;
+  border-top:2px solid var(--c-border);
+  background:var(--c-panel);
+  padding:10px 16px;
+  display:flex;align-items:center;gap:12px;
 }
-.play-info{flex:1;overflow:hidden}
-.play-file{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.play-sub{font-size:11px;color:var(--muted)}
+.play-bar-info{flex:1;overflow:hidden}
+.play-bar-file{
+  font-size:13px;font-weight:700;color:var(--c-text);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.play-bar-meta{font-family:var(--f-mono);font-size:10px;color:var(--c-muted);margin-top:2px}
+.play-bar-btn{
+  display:flex;align-items:center;gap:7px;
+  padding:12px 22px;
+  background:rgba(62,207,106,.1);
+  border:1px solid rgba(62,207,106,.3);
+  border-radius:6px;
+  color:var(--c-green);font-weight:900;
+  font-size:14px;letter-spacing:.1em;
+  cursor:pointer;white-space:nowrap;
+  transition:all .15s;
+  text-transform:uppercase;
+  font-family:var(--f-ui);
+}
+.play-bar-btn:hover{
+  background:rgba(62,207,106,.2);border-color:var(--c-green);
+  box-shadow:0 0 16px rgba(62,207,106,.2);
+}
+.play-bar-btn:active{transform:scale(.98)}
+.stop-btn{
+  display:flex;align-items:center;gap:5px;
+  padding:12px 16px;
+  background:rgba(224,80,80,.08);
+  border:1px solid rgba(224,80,80,.25);
+  border-radius:6px;
+  color:var(--c-red);font-weight:700;font-size:13px;
+  cursor:pointer;transition:all .15s;font-family:var(--f-ui);
+}
+.stop-btn:hover{background:rgba(224,80,80,.18);border-color:var(--c-red)}
+
+/* ===== STATUS-ZEILE ===== */
 .statusbar{
-  background:var(--bg2);border-top:2px solid var(--border);
-  display:flex;align-items:center;padding:0 14px;gap:10px;height:var(--status-h);
+  background:var(--c-panel);
+  border-top:1px solid var(--c-border);
+  display:flex;align-items:center;padding:0 16px;gap:12px;
+  height:30px;
 }
-.st-dot{width:9px;height:9px;border-radius:50%;background:#333;flex-shrink:0;}
-.st-dot.green{background:#50d050;box-shadow:0 0 5px #50d050}
-.st-dot.red{background:#f05050;box-shadow:0 0 5px #f05050}
-.st-dot.amber{background:#d4a020;box-shadow:0 0 5px #d4a020}
-.st-dot.blue{background:#40a0f0;box-shadow:0 0 5px #40a0f0}
-.st-txt{flex:1;font-size:12px;font-weight:700;letter-spacing:.04em}
-.st-right{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.st-seg{display:flex;align-items:center;gap:5px;font-family:var(--f-mono);font-size:10px}
+.st-dot{width:7px;height:7px;border-radius:50%;background:#1a2a3a}
+.st-dot.on-green{background:var(--c-green);box-shadow:0 0 5px var(--c-green)}
+.st-dot.on-red{background:var(--c-red);box-shadow:0 0 5px var(--c-red)}
+.st-dot.on-amber{background:var(--c-amber);box-shadow:0 0 5px var(--c-amber)}
+.st-dot.on-blue{background:var(--c-blue);box-shadow:0 0 5px var(--c-blue)}
+.st-msg{
+  flex:1;font-family:var(--f-mono);font-size:11px;
+  color:var(--c-muted);letter-spacing:.04em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.st-right{font-family:var(--f-mono);font-size:10px;color:var(--c-dim)}
+.st-div{color:var(--c-dim)}
+
+/* ===== DIAGNOSE-PANEL ===== */
+.diag-panel{
+  background:rgba(5,12,25,.8);
+  border:1px solid var(--c-border);
+  border-radius:5px;padding:10px 12px;
+  font-family:var(--f-mono);font-size:10px;
+  line-height:1.8;color:var(--c-muted);
+}
+.diag-ok{color:var(--c-green)}
+.diag-err{color:var(--c-red)}
+.diag-info{color:var(--c-cyan)}
+
+/* ===== LEER-ZUSTAND ===== */
+.empty-state{
+  text-align:center;padding:40px 20px;
+  color:var(--c-dim);font-family:var(--f-mono);
+}
+.empty-icon{font-size:40px;margin-bottom:10px;opacity:.5}
+.empty-txt{font-size:12px;letter-spacing:.06em;line-height:1.8}
+
+/* ===== NOTE ===== */
 .note{
-  font-size:11px;color:var(--muted);line-height:1.6;
-  padding:6px 10px;background:rgba(5,15,40,.6);
-  border-left:3px solid var(--border);border-radius:0 4px 4px 0;
+  font-size:11px;color:var(--c-muted);line-height:1.7;
+  padding:7px 10px;border-left:2px solid var(--c-border2);
+  background:rgba(5,15,35,.5);border-radius:0 4px 4px 0;
 }
-.empty{text-align:center;padding:28px 16px;color:var(--muted);font-size:13px}
-.empty-icon{font-size:36px;margin-bottom:8px}
-.tab-pane{display:none}
-.tab-pane.active{display:block}
-.sb-pane{display:none;flex-direction:column;gap:10px}
+
+/* ===== BLINKER ===== */
+.blink{animation:blink .8s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ===== SIDEBAR PANES ===== */
+.sb-pane{display:none;flex-direction:column;gap:12px}
 .sb-pane.active{display:flex}
-@media(max-width:680px){
+.sb-tabs{display:flex;border-bottom:1px solid var(--c-border)}
+.sbtab{
+  flex:1;padding:9px 4px;font-size:10px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;text-align:center;
+  background:transparent;border:none;border-bottom:2px solid transparent;
+  color:var(--c-muted);cursor:pointer;margin-bottom:-1px;
+  transition:color .1s,border-color .1s;font-family:var(--f-ui);
+}
+.sbtab:hover{color:var(--c-text)}
+.sbtab.active{color:var(--c-cyan);border-bottom-color:var(--c-cyan)}
+
+@media(max-width:700px){
   .main{grid-template-columns:1fr}
-  .sidebar{border-right:none;border-bottom:2px solid var(--border);max-height:45vh}
-  body,html{overflow:auto}
-  .frame{height:auto;overflow:visible}
+  .sidebar{max-height:50vh;border-right:none;border-bottom:2px solid var(--c-border)}
+  html,body{overflow:auto}
+  .frame{height:auto}
 }
 </style>
 </head>
 <body>
 <div class="frame">
 
+<!-- TITELLEISTE -->
 <header class="titlebar">
-  <div class="tl-left" id="tlDate"></div>
-  <div class="tl-center">&#128266; DURCHSAGEANLAGE</div>
-  <div class="tl-right" id="tlTime"></div>
+  <div class="tb-logo">
+    <div class="tb-logo-icon">&#128266;</div>
+    <div class="tb-title">DURCHSAGEANLAGE</div>
+  </div>
+  <div class="tb-center" id="tbCenter">SYS READY</div>
+  <div class="tb-right">
+    <div>
+      <div class="tb-clock" id="clock">--:--:--</div>
+      <div class="tb-date" id="dateStr"></div>
+    </div>
+  </div>
 </header>
 
+<!-- HAUPT -->
 <div class="main">
+
+  <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sb-tabs">
-      <button class="sbtab active" onclick="sbTab('lautsprecher',this)">&#128266; SONOS</button>
-      <button class="sbtab" onclick="sbTab('einstellungen',this)">&#9881; SETUP</button>
+      <button class="sbtab active" onclick="sbTab('sp',this)">&#9679; SONOS</button>
+      <button class="sbtab" onclick="sbTab('play',this)">&#9654; ABSPIELEN</button>
+      <button class="sbtab" onclick="sbTab('setup',this)">&#9881; SETUP</button>
     </div>
 
-    <!-- SONOS TAB -->
-    <div class="sb-body sb-pane active" id="sb-lautsprecher">
+    <!-- TAB: SONOS -->
+    <div class="sb-pane active" id="sb-sp" style="padding:10px;">
       <div>
-        <div class="sect-head">Lautsprecher</div>
+        <div class="section-label">Lautsprecher</div>
         <div class="btn-row" style="margin-bottom:8px">
-          <button class="hbtn" id="btnDisc" onclick="discoverSpeakers()" style="flex:1">&#128269; Suchen</button>
-          <button class="hbtn red" onclick="stopAll()" title="Alle stoppen">&#9209;</button>
+          <button class="btn btn-blue btn-full" id="btnDisc" onclick="discoverSpeakers()">&#128269; Netzwerk scannen</button>
         </div>
-        <div class="sp-grid" id="spGrid">
-          <div class="empty"><div class="empty-icon">&#128266;</div>Suche starten…</div>
+        <div id="spList">
+          <div class="empty-state">
+            <div class="empty-icon">&#128266;</div>
+            <div class="empty-txt">SCAN STARTEN</div>
+          </div>
         </div>
-      </div>
-      <div>
-        <div class="sect-head">Lautstärke Durchsage</div>
-        <div class="vol-row">
-          <span class="vol-lbl">25%</span>
-          <input type="range" min="1" max="100" value="25" id="volRange"
-                 oninput="document.getElementById('vlVal').textContent=this.value+'%';this.previousElementSibling.textContent=this.value+'%'">
-          <span class="vol-val" id="vlVal">25%</span>
-        </div>
-      </div>
-      <div>
-        <div class="sect-head">Gong</div>
-        <select id="gongSel"><option value="">— Kein Gong —</option></select>
       </div>
     </div>
 
-    <!-- SETUP TAB -->
-    <div class="sb-body sb-pane" id="sb-einstellungen">
-      <div>
-        <div class="sect-head">Mikrofon-Aufnahme</div>
-        <div class="rec-area">
-          <div class="rec-btn" id="recBtn" onclick="toggleRec()">&#9210;</div>
-          <div class="rec-lbl" id="recLbl">BEREIT</div>
+    <!-- TAB: ABSPIELEN -->
+    <div class="sb-pane" id="sb-play" style="padding:10px;">
+
+      <!-- MASTER PLAY -->
+      <div class="section-label">Durchsage starten</div>
+      <div class="play-master" id="masterPlay" onclick="playSelected()">
+        <div class="play-icon">&#9654;</div>
+        <div class="play-text">
+          <div class="play-label">ABSPIELEN</div>
+          <div class="play-sub" id="masterSub">Datei auswählen...</div>
         </div>
-        <div class="note" style="margin-top:8px">Aufnahme starten &rarr; stoppen &rarr; wird automatisch auf SONOS abgespielt.</div>
       </div>
+
       <div>
-        <div class="sect-head">Neuer Ordner</div>
-        <input type="text" id="newFolder" placeholder="Ordnername (z.B. Notfall)">
-        <button class="hbtn full" style="margin-top:6px" onclick="createFolder()">&#128193; Ordner erstellen</button>
+        <div class="section-label">Lautstärke</div>
+        <div class="vol-wrap">
+          <span class="vol-icon">&#128264;</span>
+          <input type="range" class="vol-slider" min="1" max="100" value="30" id="volRange"
+                 oninput="document.getElementById('volVal').textContent=this.value+'%'">
+          <span class="vol-val" id="volVal">30%</span>
+        </div>
       </div>
+
       <div>
-        <div class="sect-head">Verbindungs-Info</div>
-        <div class="note" id="debugTxt">Lade…</div>
+        <div class="section-label">Gong</div>
+        <select class="hmi-select" id="gongSel">
+          <option value="">— Kein Gong —</option>
+        </select>
+      </div>
+
+      <div>
+        <div class="section-label">Stop</div>
+        <button class="btn btn-red btn-full" onclick="stopAll()">&#9209;&nbsp; ALLE STOPPEN</button>
+      </div>
+
+      <div>
+        <div class="section-label">Playback-Status</div>
+        <div class="diag-panel" id="playStatus">Warte auf Abspielen...</div>
+      </div>
+    </div>
+
+    <!-- TAB: SETUP -->
+    <div class="sb-pane" id="sb-setup" style="padding:10px;">
+
+      <div>
+        <div class="section-label">Mikrofon-Aufnahme</div>
+        <div class="rec-center">
+          <div class="rec-circle" id="recBtn" onclick="toggleRec()">&#9210;</div>
+          <div class="rec-label" id="recLbl">BEREIT</div>
+        </div>
+        <div class="note" style="margin-top:6px">Drücken zum Aufnehmen. Nochmal drücken zum Stoppen &amp; Abspielen.</div>
+      </div>
+
+      <div>
+        <div class="section-label">Neuer Ordner</div>
+        <input type="text" class="hmi-input" id="newFolder" placeholder="Ordnername">
+        <button class="btn btn-blue btn-full" style="margin-top:6px" onclick="createFolder()">&#128193;&nbsp; Erstellen</button>
+      </div>
+
+      <div>
+        <div class="section-label">System-Diagnose</div>
+        <div class="diag-panel" id="diagPanel">Lade...</div>
       </div>
     </div>
   </aside>
 
-  <div class="content-area">
+  <!-- CONTENT -->
+  <div class="content">
     <div class="content-tabs">
-      <button class="ctab active" onclick="cTab('schnell',this)">&#9889; Schnelldurchsagen</button>
-      <button class="ctab" onclick="cTab('aufnahmen',this)">&#127908; Aufnahmen</button>
+      <button class="ctab active" onclick="cTab('quick',this)">&#9889; Schnelldurchsagen</button>
+      <button class="ctab" onclick="cTab('recs',this)">&#127908; Aufnahmen</button>
     </div>
     <div class="content-body">
-      <div class="tab-pane active" id="tp-schnell">
+      <div class="tab-pane active" id="tp-quick">
         <div id="quickTree">
-          <div class="empty"><div class="empty-icon">&#128193;</div>Keine Audiodateien.<br>Dateien in <code>schnelldurchsagen/</code> legen.</div>
+          <div class="empty-state"><div class="empty-icon">&#128193;</div><div class="empty-txt">KEINE DATEIEN<br><br>Audiodateien in<br><code>schnelldurchsagen/</code><br>ablegen</div></div>
         </div>
       </div>
-      <div class="tab-pane" id="tp-aufnahmen">
+      <div class="tab-pane" id="tp-recs">
         <div id="recList">
-          <div class="empty"><div class="empty-icon">&#127908;</div>Noch keine Aufnahmen.</div>
+          <div class="empty-state"><div class="empty-icon">&#127908;</div><div class="empty-txt">KEINE AUFNAHMEN</div></div>
         </div>
       </div>
     </div>
     <div class="play-bar">
-      <div class="play-info">
-        <div class="play-file" id="playFile">— keine Datei ausgewählt —</div>
-        <div class="play-sub" id="playSub">Datei in der Liste anklicken</div>
+      <div class="play-bar-info">
+        <div class="play-bar-file" id="pbFile">— keine Datei ausgewählt —</div>
+        <div class="play-bar-meta" id="pbMeta">Datei in der Liste anklicken</div>
       </div>
-      <button class="hbtn green xl" onclick="playSelected()" id="playBtn">&#9654;&nbsp; ABSPIELEN</button>
+      <button class="stop-btn" onclick="stopAll()">&#9209; STOP</button>
+      <button class="play-bar-btn" onclick="playSelected()" id="pbBtn">&#9654; SENDEN</button>
     </div>
   </div>
-</div>
+
+</div><!-- /main -->
 
 <footer class="statusbar">
-  <div class="st-dot" id="stDot"></div>
-  <div class="st-txt" id="stTxt">BEREIT</div>
+  <div class="st-seg"><div class="st-dot" id="stDot"></div><span class="st-msg" id="stMsg">SYSTEM BEREIT</span></div>
+  <span class="st-div">|</span>
+  <div class="st-seg"><div class="st-dot" id="socoDot"></div><span id="socoTxt">SOCO --</span></div>
+  <span class="st-div">|</span>
+  <div class="st-seg"><div class="st-dot" id="spDot"></div><span id="spTxt">0 LS</span></div>
+  <span class="st-div">|</span>
   <div class="st-right" id="stRight"></div>
 </footer>
-</div>
+
+</div><!-- /frame -->
 
 <script>
 'use strict';
 
-let selPath     = '';
-let selFile     = '';
-let selSpeakers = new Set();
-let isRec       = false;
+let selPath = '', selFile = '', selSpeakers = new Set();
+let isRec = false;
+let pollTimer = null;
 
-// ---- Uhr ----
+// ========== UHR ==========
+const DAYS = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+const MON  = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
 function tick(){
-  const n=new Date(),p=s=>String(s).padStart(2,'0');
-  const days=['So','Mo','Di','Mi','Do','Fr','Sa'];
-  document.getElementById('tlDate').textContent=
-    days[n.getDay()]+', '+p(n.getDate())+'.'+p(n.getMonth()+1)+'.'+String(n.getFullYear()).slice(-2);
-  document.getElementById('tlTime').textContent=
-    p(n.getHours())+':'+p(n.getMinutes())+':'+p(n.getSeconds());
+  const n=new Date(), p=s=>String(s).padStart(2,'0');
+  document.getElementById('clock').textContent = p(n.getHours())+':'+p(n.getMinutes())+':'+p(n.getSeconds());
+  document.getElementById('dateStr').textContent = DAYS[n.getDay()]+' '+p(n.getDate())+'. '+MON[n.getMonth()];
 }
 setInterval(tick,1000); tick();
 
-// ---- API ----
-async function api(url,opts={}){
+// ========== API ==========
+async function api(url, opts={}){
   try{
-    const r=await fetch(url,{headers:{'Content-Type':'application/json'},...opts});
-    if(!r.ok) return {success:false,error:`HTTP ${r.status}`};
+    const r = await fetch(url,{headers:{'Content-Type':'application/json'},...opts});
+    if(!r.ok) return {success:false,error:`HTTP ${r.status} bei ${url}`};
     return await r.json();
   }catch(e){return {success:false,error:e.message};}
 }
 
-// ---- Status ----
-function setStatus(msg,type=''){
-  const m={ok:'green',err:'red',warn:'amber',info:'blue'};
-  document.getElementById('stDot').className='st-dot '+(m[type]||'');
-  document.getElementById('stTxt').textContent=msg;
+// ========== STATUS ==========
+function setStatus(msg, type=''){
+  const cls = {ok:'on-green',err:'on-red',warn:'on-amber',info:'on-blue'};
+  document.getElementById('stDot').className = 'st-dot '+(cls[type]||'');
+  document.getElementById('stMsg').textContent = msg;
 }
 
-// ---- Tabs ----
+// ========== TABS ==========
 function sbTab(id,btn){
   document.querySelectorAll('.sb-pane').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.sbtab').forEach(b=>b.classList.remove('active'));
@@ -367,134 +724,125 @@ function cTab(id,btn){
   btn.classList.add('active');
 }
 
-// ---- Lautsprecher ----
+// ========== LAUTSPRECHER ==========
 function renderSpeakers(list){
-  const g=document.getElementById('spGrid');
-  if(!list||!list.length){
-    g.innerHTML='<div class="empty"><div class="empty-icon">&#128266;</div>Keine SONOS-Geräte gefunden.</div>';
+  const c = document.getElementById('spList');
+  document.getElementById('spDot').className = list.length ? 'st-dot on-green' : 'st-dot on-red';
+  document.getElementById('spTxt').textContent = list.length + ' LS';
+  if(!list.length){
+    c.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128266;</div><div class="empty-txt">KEINE SONOS-GERÄTE<br>im Netzwerk gefunden</div></div>';
     return;
   }
-  g.innerHTML='';
+  c.innerHTML = '';
   list.forEach(s=>{
-    const on=selSpeakers.has(s.ip);
-    const d=document.createElement('div');
-    d.className='sp-card'+(on?' on':'');
-    d.innerHTML=
-      `<div class="sp-ind"></div>`+
-      `<div class="sp-info">`+
-        `<div class="sp-name">${s.name}</div>`+
-        `<div class="sp-sub">${s.ip} &bull; ${s.group||'Solo'}</div>`+
-      `</div>`+
-      `<div class="sp-vol">${s.volume}%</div>`;
-    d.addEventListener('click',()=>{
-      if(selSpeakers.has(s.ip)){selSpeakers.delete(s.ip);d.classList.remove('on');}
-      else{selSpeakers.add(s.ip);d.classList.add('on');}
-      setStatus(selSpeakers.size?`${selSpeakers.size} Gerät(e) ausgewählt`:'Kein Gerät ausgewählt',
-                selSpeakers.size?'ok':'warn');
+    const div = document.createElement('div');
+    div.className = 'sp-tile' + (selSpeakers.has(s.ip) ? ' active' : '');
+    div.innerHTML =
+      '<div class="sp-led"></div>'+
+      '<div class="sp-info">'+
+        '<div class="sp-name">'+s.name+'</div>'+
+        '<div class="sp-meta">'+s.ip+' &bull; '+s.model+'</div>'+
+      '</div>'+
+      '<div class="sp-vol">'+s.volume+'%</div>';
+    div.addEventListener('click',()=>{
+      if(selSpeakers.has(s.ip)){selSpeakers.delete(s.ip);div.classList.remove('active');}
+      else{selSpeakers.add(s.ip);div.classList.add('active');}
+      const n = selSpeakers.size;
+      setStatus(n ? n+' Lautsprecher ausgewählt' : 'Kein Lautsprecher ausgewählt', n?'ok':'warn');
+      document.getElementById('spTxt').textContent = list.length + ' LS (' + n + ' aktiv)';
     });
-    g.appendChild(d);
+    c.appendChild(div);
   });
 }
 
 async function discoverSpeakers(){
-  const b=document.getElementById('btnDisc');
-  b.textContent='⧖ Suche…';
-  b.disabled=true;
-  setStatus('Suche SONOS-Geräte (8 s)…','info');
-  const d=await api('/api/speakers/discover',{method:'POST',body:'{}'});
+  const b = document.getElementById('btnDisc');
+  b.textContent = '◌ Suche…';
+  b.disabled = true;
+  setStatus('Suche SONOS im Netzwerk (8 s)…','info');
+  const d = await api('/api/speakers/discover',{method:'POST',body:'{}'});
   renderSpeakers(d.speakers||[]);
-  const n=(d.speakers||[]).length;
-  setStatus(n?`${n} Gerät(e) gefunden – bitte auswählen`:'Keine Geräte gefunden',n?'ok':'warn');
-  b.innerHTML='&#128269; Suchen';
-  b.disabled=false;
+  const n = (d.speakers||[]).length;
+  setStatus(n ? n+' Gerät(e) gefunden – Lautsprecher anklicken zum Aktivieren' : 'Keine SONOS-Geräte gefunden', n?'ok':'warn');
+  b.innerHTML = '&#128269; Netzwerk scannen';
+  b.disabled = false;
 }
 
+// ========== GONGS ==========
 async function loadGongs(){
-  const d=await api('/api/gongs');
-  const s=document.getElementById('gongSel');
-  s.innerHTML='<option value="">— Kein Gong —</option>';
+  const d = await api('/api/gongs');
+  const s = document.getElementById('gongSel');
+  s.innerHTML = '<option value="">— Kein Gong —</option>';
   (d.gongs||[]).forEach(g=>{
-    const o=document.createElement('option');
-    o.value=g.path;o.textContent=g.name;s.appendChild(o);
+    const o = document.createElement('option');
+    o.value = g.path; o.textContent = g.name;
+    s.appendChild(o);
   });
 }
 
-// ---- Datei auswählen ----
-function selectFile(path,name){
-  selPath=path;selFile=name;
-  // alle aktiven markierungen entfernen
+// ========== DATEI-SELEKTION ==========
+function selectFile(path, name){
+  selPath = path; selFile = name;
   document.querySelectorAll('.frow.active').forEach(r=>r.classList.remove('active'));
-  // aktive Zeile markieren
-  const match=document.querySelector(`.frow[data-path="${CSS.escape(path)}"]`);
-  if(match) match.classList.add('active');
-  document.getElementById('playFile').textContent=name;
-  document.getElementById('playSub').textContent=path;
-  setStatus('Ausgewählt: '+name,'info');
+  const m = document.querySelector(`.frow[data-path]`);
+  // alle frows durchsuchen
+  document.querySelectorAll('.frow').forEach(r=>{
+    if(r.dataset.path===path) r.classList.add('active');
+  });
+  document.getElementById('pbFile').textContent = name;
+  document.getElementById('pbMeta').textContent = path;
+  document.getElementById('masterSub').textContent = name;
+  setStatus('Ausgewählt: '+name, 'info');
+  // Automatisch zum Abspielen-Tab wechseln
+  sbTab('play', document.querySelectorAll('.sbtab')[1]);
 }
 
-// ---- File-Row erstellen ----
+// ========== FILE ROW ==========
 function makeFileRow(f){
-  const div=document.createElement('div');
-  div.className='frow';
-  div.dataset.path=f.path;
-  const ext=f.name.split('.').pop().toUpperCase();
-  const kb=Math.max(1,Math.round(f.size/1024));
-  div.innerHTML=
-    `<span class="frow-icon">&#127925;</span>`+
-    `<span class="frow-name">${f.name}</span>`+
-    `<span class="frow-meta">${ext} &bull; ${kb} KB</span>`;
+  const div = document.createElement('div');
+  div.className = 'frow';
+  div.dataset.path = f.path;
+  if(selPath===f.path) div.classList.add('active');
+  const ext = f.name.split('.').pop().toUpperCase();
+  const kb = Math.max(1,Math.round(f.size/1024));
+  div.innerHTML =
+    '<span class="frow-icon">&#127925;</span>'+
+    '<span class="frow-name">'+f.name+'</span>'+
+    '<span class="frow-meta">'+ext+' '+kb+'KB</span>';
   div.addEventListener('click',()=>selectFile(f.path,f.name));
   return div;
 }
 
-// ---- ORDNER-BLOCK RENDERN (neu, korrekt) ----
-// Gibt ein DOM-Element zurück das direkt ins DOM gehängt werden kann
+// ========== ORDNER BLOCK ==========
 function makeFolderBlock(node){
-  // Wrapper
-  const block=document.createElement('div');
-  block.className='folder-block';
+  function countAll(n){ return (n.files||[]).length + (n.folders||[]).reduce((s,f)=>s+countAll(f),0); }
+  const total = countAll(node);
+  const block = document.createElement('div');
+  block.className = 'folder-block';
 
-  // Zähle alle Dateien in diesem Knoten (direkt + unterordner)
-  function countFiles(n){
-    let c=(n.files||[]).length;
-    (n.folders||[]).forEach(f=>c+=countFiles(f));
-    return c;
-  }
-  const total=countFiles(node);
+  const header = document.createElement('div');
+  header.className = 'folder-header';
+  header.innerHTML =
+    '<span class="folder-arrow open" >&#9654;</span>'+
+    '<span style="font-size:14px;margin-right:2px">&#128193;</span>'+
+    '<span class="folder-name">'+node.name+'</span>'+
+    '<span class="folder-badge">'+total+'</span>';
 
-  // Header-Zeile (klickbar zum auf-/zuklappen)
-  const header=document.createElement('div');
-  header.className='folder-header';
-  header.innerHTML=
-    `<span class="folder-arrow open">&#9654;</span>`+
-    `<span style="font-size:15px">&#128193;</span>`+
-    `<span class="folder-name-txt">${node.name}</span>`+
-    `<span class="folder-count">${total}</span>`;
+  const children = document.createElement('div');
+  children.className = 'folder-children';
 
-  // Children-Container
-  const children=document.createElement('div');
-  children.className='folder-children'; // offen per default
-
-  // Dateien direkt in diesem Ordner
   if(node.files && node.files.length){
-    const fl=document.createElement('div');
-    fl.className='flist';
+    const fl = document.createElement('div'); fl.className='flist';
     node.files.forEach(f=>fl.appendChild(makeFileRow(f)));
     children.appendChild(fl);
   }
+  (node.folders||[]).forEach(sub=>children.appendChild(makeFolderBlock(sub)));
 
-  // Unterordner rekursiv
-  if(node.folders && node.folders.length){
-    node.folders.forEach(sub=>children.appendChild(makeFolderBlock(sub)));
-  }
-
-  // Toggle auf Klick
   let open=true;
   header.addEventListener('click',()=>{
     open=!open;
-    children.classList.toggle('collapsed',!open);
-    const arrow=header.querySelector('.folder-arrow');
-    arrow.classList.toggle('open',open);
+    children.classList.toggle('closed',!open);
+    header.querySelector('.folder-arrow').classList.toggle('open',open);
   });
 
   block.appendChild(header);
@@ -502,128 +850,150 @@ function makeFolderBlock(node){
   return block;
 }
 
-// ---- Schnelldurchsagen-Baum laden ----
+// ========== QUICK BAUM ==========
 async function loadQuick(){
-  const d=await api('/api/schnelldurchsagen');
-  const c=document.getElementById('quickTree');
-  c.innerHTML='';
-
-  // prüfe ob Inhalte vorhanden
-  function hasAny(n){return (n.files||[]).length>0||(n.folders||[]).some(hasAny);}
+  const d = await api('/api/schnelldurchsagen');
+  const c = document.getElementById('quickTree');
+  c.innerHTML = '';
+  function hasAny(n){ return (n.files||[]).length>0 || (n.folders||[]).some(hasAny); }
   if(!hasAny(d)){
-    c.innerHTML='<div class="empty"><div class="empty-icon">&#128193;</div>Keine Audiodateien.<br>Dateien in <code>schnelldurchsagen/</code> legen.</div>';
+    c.innerHTML = '<div class="empty-state"><div class="empty-icon">&#128193;</div><div class="empty-txt">KEINE DATEIEN<br><br>MP3/WAV in<br><code>schnelldurchsagen/</code></div></div>';
     return;
   }
-
-  // Root-Dateien direkt (ohne Ordner-Wrapper)
   if(d.files && d.files.length){
-    const fl=document.createElement('div');
-    fl.className='flist';
-    fl.style.marginBottom='8px';
+    const fl = document.createElement('div'); fl.className='flist'; fl.style.marginBottom='8px';
     d.files.forEach(f=>fl.appendChild(makeFileRow(f)));
     c.appendChild(fl);
   }
-
-  // Unterordner
-  if(d.folders && d.folders.length){
-    d.folders.forEach(sub=>c.appendChild(makeFolderBlock(sub)));
-  }
+  (d.folders||[]).forEach(sub=>c.appendChild(makeFolderBlock(sub)));
 }
 
-// ---- Aufnahmen laden ----
+// ========== AUFNAHMEN ==========
 async function loadRecs(){
-  const d=await api('/api/recordings');
-  const el=document.getElementById('recList');
-  const recs=d.recordings||[];
+  const d = await api('/api/recordings');
+  const el = document.getElementById('recList');
+  const recs = d.recordings||[];
   if(!recs.length){
-    el.innerHTML='<div class="empty"><div class="empty-icon">&#127908;</div>Noch keine Aufnahmen.</div>';
+    el.innerHTML='<div class="empty-state"><div class="empty-icon">&#127908;</div><div class="empty-txt">KEINE AUFNAHMEN</div></div>';
     return;
   }
   el.innerHTML='';
-  const fl=document.createElement('div');fl.className='flist';
+  const fl=document.createElement('div'); fl.className='flist';
   recs.forEach(r=>{
     const div=document.createElement('div');
     div.className='frow'+(selPath===r.path?' active':'');
     div.dataset.path=r.path;
     const kb=Math.max(1,Math.round(r.size/1024));
     const dt=new Date(r.modified*1000);
-    const ts=`${String(dt.getDate()).padStart(2,'0')}.${String(dt.getMonth()+1).padStart(2,'0')}. `+
-             `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
+    const ts=String(dt.getDate()).padStart(2,'0')+'.'+String(dt.getMonth()+1).padStart(2,'0')+'. '+
+             String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');
     div.innerHTML=
-      `<span class="frow-icon">&#127908;</span>`+
-      `<span class="frow-name">${r.name}</span>`+
-      `<span class="frow-meta">${kb} KB &bull; ${ts}</span>`;
+      '<span class="frow-icon">&#127908;</span>'+
+      '<span class="frow-name">'+r.name+'</span>'+
+      '<span class="frow-meta">'+kb+'KB '+ts+'</span>';
     div.addEventListener('click',()=>selectFile(r.path,r.name));
     fl.appendChild(div);
   });
   el.appendChild(fl);
 }
 
-// ---- Aufnahme ----
+// ========== AUFNAHME ==========
 async function toggleRec(){
   const btn=document.getElementById('recBtn');
   const lbl=document.getElementById('recLbl');
   if(!isRec){
     const d=await api('/api/record/start',{method:'POST',body:'{}'});
     if(d.success){
-      isRec=true;
-      btn.classList.add('recording');
-      btn.innerHTML='&#9209;';
-      lbl.textContent='REC ●';
-      lbl.classList.add('active');
+      isRec=true; btn.classList.add('on'); btn.innerHTML='&#9209;';
+      lbl.textContent='REC ●'; lbl.classList.add('on');
       setStatus('Aufnahme läuft…','warn');
     }else setStatus('Aufnahme-Fehler: '+(d.error||'?'),'err');
   }else{
     const d=await api('/api/record/stop',{method:'POST',body:'{}'});
-    isRec=false;
-    btn.classList.remove('recording');
-    btn.innerHTML='&#9210;';
-    lbl.textContent='BEREIT';
-    lbl.classList.remove('active');
+    isRec=false; btn.classList.remove('on'); btn.innerHTML='&#9210;';
+    lbl.textContent='BEREIT'; lbl.classList.remove('on');
     if(d.success){
       setStatus('Gespeichert: '+d.filename,'ok');
       await loadRecs();
-      cTab('aufnahmen',document.querySelectorAll('.ctab')[1]);
       if(selSpeakers.size&&d.path){
         selectFile(d.path,d.filename);
         await playSelected();
+      }else{
+        cTab('recs',document.querySelectorAll('.ctab')[1]);
       }
-    }else setStatus('Speicherfehler: '+(d.error||'?'),'err');
+    }else setStatus('Fehler: '+(d.error||'?'),'err');
   }
 }
 
-// ---- Abspielen ----
+// ========== PLAYBACK-POLLING ==========
+function startPlayPoll(){
+  if(pollTimer) clearInterval(pollTimer);
+  let attempts = 0;
+  pollTimer = setInterval(async ()=>{
+    attempts++;
+    const r = await api('/api/play-result');
+    const ps = document.getElementById('playStatus');
+    if(r.success===true){
+      ps.innerHTML = '<span class="diag-ok">✓ ERFOLGREICH</span><br>'+'URL: '+r.url;
+      setStatus('&#9654; Durchsage aktiv: '+selFile,'ok');
+      clearInterval(pollTimer);
+    }else if(r.success===false){
+      ps.innerHTML = '<span class="diag-err">✗ FEHLER</span><br>'+(r.errors||[]).join('<br>')||r.error||'Unbekannter Fehler';
+      setStatus('FEHLER beim Abspielen','err');
+      clearInterval(pollTimer);
+    }else if(attempts>15){
+      ps.innerHTML = '<span class="diag-info">Timeout beim Warten auf Ergebnis</span>';
+      clearInterval(pollTimer);
+    }
+  },800);
+}
+
+// ========== ABSPIELEN ==========
 async function playSelected(){
-  if(!selPath){setStatus('Keine Datei ausgewählt!','err');return;}
-  if(!selSpeakers.size){setStatus('Keinen Lautsprecher auswählen!','err');return;}
-  const volume=parseInt(document.getElementById('volRange').value,10);
-  const gong  =document.getElementById('gongSel').value;
-  setStatus('Durchsage wird gesendet…','info');
-  const pb=document.getElementById('playBtn');
-  pb.innerHTML='&#x23F3; Sende…';
-  const d=await api('/api/play',{
+  if(!selPath){ setStatus('Keine Datei ausgewählt!','err'); return; }
+  if(!selSpeakers.size){
+    setStatus('Keinen Lautsprecher ausgewählt! SONOS-Tab → Gerät anklicken.','err');
+    sbTab('sp', document.querySelectorAll('.sbtab')[0]);
+    return;
+  }
+  const volume = parseInt(document.getElementById('volRange').value,10);
+  const gong   = document.getElementById('gongSel').value;
+  document.getElementById('playStatus').innerHTML = '<span class="diag-info blink">● Läuft...</span>';
+  setStatus('Sende Durchsage an SONOS…','info');
+  document.getElementById('pbBtn').textContent = '⧖ Sende...';
+
+  const d = await api('/api/play',{
     method:'POST',
     body:JSON.stringify({
-      audio_path:selPath,
-      gong_path:gong||null,
-      speakers:Array.from(selSpeakers),
+      audio_path: selPath,
+      gong_path:  gong||null,
+      speakers:   Array.from(selSpeakers),
       volume
     })
   });
-  pb.innerHTML='&#9654;&nbsp; ABSPIELEN';
-  if(d.success) setStatus('&#9654; AKTIV: '+selFile,'ok');
-  else setStatus('FEHLER: '+(d.error||'unbekannt'),'err');
+
+  document.getElementById('pbBtn').innerHTML = '&#9654; SENDEN';
+  if(d.success){
+    document.getElementById('playStatus').innerHTML =
+      '<span class="diag-info">Anfrage OK – warte auf SONOS…</span><br>'+
+      '<span style="color:var(--c-muted)">'+d.audio_url+'</span>';
+    sbTab('play', document.querySelectorAll('.sbtab')[1]);
+    startPlayPoll();
+  }else{
+    document.getElementById('playStatus').innerHTML = '<span class="diag-err">✗ '+d.error+'</span>';
+    setStatus('FEHLER: '+d.error,'err');
+  }
 }
 
 async function stopAll(){
-  const d=await api('/api/stop',{method:'POST',body:JSON.stringify({speakers:Array.from(selSpeakers)})});
-  setStatus(d.success?'Wiedergabe gestoppt':'Stop-Fehler','ok');
+  const d = await api('/api/stop',{method:'POST',body:JSON.stringify({speakers:Array.from(selSpeakers)})});
+  setStatus(d.success?'Wiedergabe gestoppt':'Stop-Fehler', d.success?'ok':'err');
 }
 
 async function createFolder(){
-  const n=document.getElementById('newFolder').value.trim();
+  const n = document.getElementById('newFolder').value.trim();
   if(!n){setStatus('Ordnername eingeben','err');return;}
-  const d=await api('/api/folder/create',{method:'POST',body:JSON.stringify({name:n})});
+  const d = await api('/api/folder/create',{method:'POST',body:JSON.stringify({name:n})});
   if(d.success){
     document.getElementById('newFolder').value='';
     setStatus('Ordner erstellt: '+n,'ok');
@@ -631,14 +1001,26 @@ async function createFolder(){
   }else setStatus('Fehler: '+(d.error||'?'),'err');
 }
 
-// ---- Init ----
+// ========== INIT ==========
 (async()=>{
-  const s=await api('/api/status');
-  document.getElementById('stRight').textContent=
-    `${s.ip||''}:${s.port||5000}  |  SOCO: ${s.soco?'\u2713':'\u2717'}  |  AUDIO: ${s.audio?'\u2713':'\u2717'}`;
-  const tu=await api('/api/test-url');
-  document.getElementById('debugTxt').textContent=
-    'Media-URL: '+(tu.base_url||'unbekannt')+'\n\nSONOS muss diesen Host per HTTP erreichen können (gleiches WLAN, kein VPN).';
+  const s = await api('/api/status');
+  const ip = s.ip||'127.0.0.1';
+  const port = s.port||5000;
+  document.getElementById('stRight').textContent = ip+':'+port+'  v'+s.version;
+
+  // SOCO-Indikator
+  document.getElementById('socoDot').className = 'st-dot '+(s.soco?'on-green':'on-red');
+  document.getElementById('socoTxt').textContent = 'SOCO '+(s.soco?'OK':'FEHLT');
+
+  // Diagnose
+  const media = s.media_base||('http://'+ip+':'+port+'/media/');
+  document.getElementById('diagPanel').innerHTML =
+    'SOCO: <span class="'+(s.soco?'diag-ok':'diag-err')+'">'+(s.soco?'installiert':'FEHLT - pip install soco')+'</span>\n'+
+    'AUDIO: <span class="'+(s.audio?'diag-ok':'diag-err')+'">'+(s.audio?'OK':'FEHLT - pip install sounddevice soundfile numpy')+'</span>\n'+
+    'MEDIA: <span class="diag-info">'+media+'</span>\n'+
+    'IP: '+ip+'\n'+
+    'VERSION: '+s.version;
+
   await loadGongs();
   await loadQuick();
   await loadRecs();
