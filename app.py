@@ -133,7 +133,7 @@ def play_on_speakers(speaker_ips: list, audio_path: str,
             log.error(f"Abspielfehler {ip}: {e}")
             errors.append(f"{ip}: {e}")
     if errors:
-        return {"success": False, "error"; ", ".join(errors)}
+        return {"success": False, "error": ", ".join(errors)}
     return {"success": True}
 
 
@@ -162,7 +162,6 @@ def folder_tree(root: Path, rel_root: Path) -> dict:
 def serve_media(filename):
     """Liefert Dateien aus dem gesamten Projektverzeichnis an SONOS."""
     target = (BASE_DIR / filename).resolve()
-    # Sicherheitscheck: muss im Projektordner liegen
     try:
         target.relative_to(BASE_DIR)
     except ValueError:
