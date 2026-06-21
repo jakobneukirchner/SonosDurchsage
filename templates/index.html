@@ -1,762 +1,644 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SONOS Durchsageanlage</title>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <style>
-/* =====================================================================
-   SONOS DURCHSAGEANLAGE – HMI / Operator Interface
-   Farbschema: Dunkles Panel, grüne Statusfarben (SCADA-Stil)
-===================================================================== */
-:root {
-  --bg:         #0d1117;
-  --panel:      #161b22;
-  --panel2:     #1c2230;
-  --border:     #30363d;
-  --border2:    #21262d;
-  --text:       #e6edf3;
-  --muted:      #8b949e;
-  --faint:      #484f58;
-  --green:      #3fb950;
-  --green-d:    #238636;
-  --green-hl:   rgba(63,185,80,.12);
-  --amber:      #d29922;
-  --amber-hl:   rgba(210,153,34,.12);
-  --red:        #f85149;
-  --red-hl:     rgba(248,81,73,.12);
-  --blue:       #58a6ff;
-  --blue-hl:    rgba(88,166,255,.12);
-  --mono:       'Roboto Mono', monospace;
-  --sans:       'Roboto', sans-serif;
-  --radius:     4px;
-  --radius-lg:  6px;
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Durchsageanlage</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ====================================================================
+   LOK-HMI STYLE  (Bombardier / Siemens Fahrzeugfuehrer-Display)
+   Dunkelblauer Hintergrund, hellblaue Schaltflaechen, weisse Schrift
+==================================================================== */
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{
+  height:100%;
+  background:#000;
+  font-family:'Noto Sans',Arial,sans-serif;
+  font-size:16px;
+  color:#fff;
+  overflow:hidden;
+  user-select:none;
 }
-*{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%}
-body{
-  font-family:var(--sans);
-  background:var(--bg);
-  color:var(--text);
-  font-size:14px;
-  line-height:1.5;
-  overflow-x:hidden;
-}
-/* ── Scrollbar ── */
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:var(--bg)}
-::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-/* ── Layout ── */
-.shell{
+/* ---------- Gesamtrahmen (simuliert Displayrahmen) ---------- */
+.frame{
+  width:100vw;height:100vh;
   display:grid;
-  grid-template-rows:auto 1fr;
-  min-height:100vh;
+  grid-template-rows:auto 1fr auto;
+  background: #0a1628;
 }
-.topbar{
-  background:var(--panel);
-  border-bottom:1px solid var(--border);
-  padding:0 20px;
+/* ---------- Titelleiste ---------- */
+.titlebar{
+  background: #0a1628;
+  border-bottom:2px solid #2a5298;
+  padding:6px 20px;
   display:flex;
   align-items:center;
   justify-content:space-between;
-  height:52px;
-  gap:12px;
-  position:sticky;
-  top:0;
-  z-index:100;
+  gap:8px;
+  min-height:44px;
 }
-.brand{
+.titlebar-left{font-size:14px;color:#cde;font-weight:400;white-space:nowrap}
+.titlebar-center{
+  font-size:20px;
+  font-weight:700;
+  letter-spacing:.04em;
+  text-align:center;
+  flex:1;
+}
+.titlebar-right{
+  font-size:14px;
+  color:#cde;
+  font-family:'Noto Sans',monospace;
+  white-space:nowrap;
+  text-align:right;
+}
+/* ---------- Hauptbereich ---------- */
+.main{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:0;
+  overflow:hidden;
+}
+.panel{
+  padding:12px 16px;
+  border-right:1px solid #1e3a6a;
+  overflow-y:auto;
   display:flex;
-  align-items:center;
-  gap:12px;
-  font-family:var(--mono);
+  flex-direction:column;
+  gap:10px;
+}
+.panel:last-child{border-right:none}
+/* ---------- Panel-Ueberschrift ---------- */
+.p-head{
   font-size:13px;
   font-weight:700;
   letter-spacing:.08em;
   text-transform:uppercase;
+  color:#8ab;
+  border-bottom:1px solid #1e3a6a;
+  padding-bottom:6px;
+  margin-bottom:2px;
 }
-.brand-icon{
-  width:32px;height:32px;
-  border:2px solid var(--green);
-  border-radius:var(--radius);
-  display:grid;
-  place-items:center;
-  color:var(--green);
-}
-.brand-icon svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2}
-.sysinfo{
-  display:flex;
+/* ---------- HMI-Schaltflaeche (Lok-Stil) ---------- */
+.hbtn{
+  display:inline-flex;
   align-items:center;
-  gap:16px;
-}
-.sysval{
-  font-family:var(--mono);
-  font-size:11px;
-  color:var(--muted);
-  white-space:nowrap;
-}
-.sysval span{color:var(--green);margin-left:4px}
-.sysval.err span{color:var(--red)}
-/* ── Main 3-col ── */
-.main{
-  display:grid;
-  grid-template-columns:300px 1fr 280px;
-  gap:0;
-  overflow:hidden;
-  height:calc(100vh - 52px);
-}
-.col{
-  border-right:1px solid var(--border);
-  overflow-y:auto;
-  padding:16px;
-}
-.col:last-child{border-right:none}
-/* ── Section headers ── */
-.sec-head{
-  font-family:var(--mono);
-  font-size:10px;
+  justify-content:center;
+  gap:6px;
+  background: linear-gradient(180deg, #4a7fd4 0%, #2a5298 60%, #1e3f7a 100%);
+  border: 1px solid #6fa0e8;
+  border-bottom-color: #1a3060;
+  border-radius:6px;
+  color:#fff;
+  font-family:inherit;
+  font-size:14px;
   font-weight:700;
-  letter-spacing:.14em;
-  text-transform:uppercase;
-  color:var(--muted);
-  border-bottom:1px solid var(--border);
-  padding-bottom:8px;
-  margin-bottom:12px;
+  padding:9px 18px;
+  cursor:pointer;
+  text-align:center;
+  transition:filter .08s;
+  white-space:nowrap;
+  box-shadow: 0 2px 4px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.15);
+}
+.hbtn:hover{filter:brightness(1.15)}
+.hbtn:active{
+  filter:brightness(.85);
+  transform:translateY(1px);
+  box-shadow:0 1px 2px rgba(0,0,0,.5), inset 0 1px 0 rgba(0,0,0,.1);
+}
+.hbtn.active{
+  background:linear-gradient(180deg,#70b040 0%,#4a8020 60%,#306010 100%);
+  border-color:#90d060;
+  border-bottom-color:#204010;
+  box-shadow:0 0 8px rgba(100,200,50,.4), 0 2px 4px rgba(0,0,0,.5);
+}
+.hbtn.danger{
+  background:linear-gradient(180deg,#d44a4a 0%,#982a2a 60%,#7a1e1e 100%);
+  border-color:#e87070;
+  border-bottom-color:#601818;
+}
+.hbtn.danger:hover{filter:brightness(1.1)}
+.hbtn-row{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.hbtn-full{width:100%;font-size:16px;padding:12px 18px}
+/* ---------- Tabelle Aktuell/Soll (Lok-Stil) ---------- */
+.tbl{
+  width:100%;
+  border-collapse:separate;
+  border-spacing:0 4px;
+}
+.tbl td{
+  padding:6px 10px;
+  font-size:14px;
+  vertical-align:middle;
+}
+.tbl td:first-child{
+  font-weight:700;
+  color:#cde;
+  width:50%;
+}
+.tbl .val{
+  background:linear-gradient(180deg,#4a7fd4 0%,#2a5298 70%,#1e3f7a 100%);
+  border:1px solid #6fa0e8;
+  border-radius:5px;
+  text-align:center;
+  font-weight:700;
+  font-size:13px;
+  padding:5px 8px;
+  min-width:80px;
+  cursor:pointer;
+  transition:filter .08s;
+}
+.tbl .val:hover{filter:brightness(1.15)}
+.tbl .val.sel{
+  background:linear-gradient(180deg,#70b040 0%,#4a8020 70%,#306010 100%);
+  border-color:#90d060;
+  box-shadow:0 0 6px rgba(100,200,50,.35);
+}
+/* ---------- Lautstarkeregler ---------- */
+.vol-wrap{display:flex;align-items:center;gap:10px}
+.vol-label{color:#8ab;font-size:13px;width:110px;flex-shrink:0}
+.vol-num{
+  background:linear-gradient(180deg,#4a7fd4 0%,#2a5298 70%,#1e3f7a 100%);
+  border:1px solid #6fa0e8;
+  border-radius:5px;
+  font-weight:700;
+  font-size:13px;
+  padding:4px 10px;
+  min-width:54px;
+  text-align:center;
+}
+input[type=range]{
+  flex:1;
+  accent-color:#6fa0e8;
+  height:6px;
+  cursor:pointer;
+}
+/* ---------- Dateiliste (Lok-Tabellenzeilen) ---------- */
+.flist{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+.frow{
   display:flex;
   align-items:center;
   justify-content:space-between;
+  background:rgba(30,60,120,.35);
+  border:1px solid #1e3a6a;
+  border-radius:4px;
+  padding:6px 10px;
+  cursor:pointer;
+  font-size:13px;
+  gap:8px;
+  transition:background .08s, border-color .08s;
 }
-/* ── Buttons ── */
-btn,button{cursor:pointer;border:none;font-family:var(--sans)}
-.btn{
-  display:inline-flex;
+.frow:hover{background:rgba(74,127,212,.25);border-color:#4a7fd4}
+.frow.active{
+  background:linear-gradient(90deg,rgba(70,160,40,.3),rgba(30,120,20,.2));
+  border-color:#90d060;
+  color:#b0f060;
+  font-weight:700;
+}
+.frow-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.frow-meta{font-size:11px;color:#8ab;flex-shrink:0}
+.folder-head{
+  display:flex;
   align-items:center;
   gap:6px;
-  padding:7px 14px;
-  border-radius:var(--radius);
-  font-size:13px;
-  font-weight:500;
-  border:1px solid transparent;
-  transition:all .12s;
-  cursor:pointer;
-  white-space:nowrap;
-  background:var(--panel2);
-  color:var(--text);
-  border-color:var(--border);
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:#8ab;
+  padding:5px 4px 3px;
 }
-.btn:hover{background:var(--panel);border-color:var(--blue);color:var(--blue)}
-.btn:active{opacity:.8}
-.btn-primary{
-  background:var(--green-d);
-  border-color:var(--green);
-  color:#fff;
-}
-.btn-primary:hover{background:var(--green);border-color:var(--green);color:#000}
-.btn-danger{
-  background:var(--red-hl);
-  border-color:var(--red);
-  color:var(--red);
-}
-.btn-danger:hover{background:var(--red);color:#fff}
-.btn-sm{padding:4px 10px;font-size:12px}
-.btn-icon{padding:6px;min-width:32px;justify-content:center}
-.btn-full{width:100%;justify-content:center;padding:10px 14px;font-size:14px}
-.btn-group{display:flex;gap:6px;flex-wrap:wrap}
-/* ── Speaker list ── */
-.sp-item{
-  background:var(--panel2);
-  border:1px solid var(--border);
-  border-radius:var(--radius-lg);
-  padding:10px 12px;
-  margin-bottom:8px;
-  display:flex;
-  align-items:flex-start;
-  gap:10px;
-  cursor:pointer;
-  transition:border-color .12s, background .12s;
-}
-.sp-item:hover{border-color:var(--blue);background:var(--blue-hl)}
-.sp-item.selected{border-color:var(--green);background:var(--green-hl)}
-.sp-check{
-  width:16px;height:16px;
-  border:2px solid var(--faint);
-  border-radius:3px;
-  margin-top:2px;
-  flex-shrink:0;
+/* ---------- Aufnahme-Button ---------- */
+.rec-circle{
+  width:60px;height:60px;
+  border-radius:50%;
+  background:linear-gradient(180deg,#d44a4a 0%,#982a2a 60%,#7a1e1e 100%);
+  border:2px solid #e87070;
+  box-shadow:0 2px 6px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1);
   display:grid;
   place-items:center;
-  transition:all .12s;
+  cursor:pointer;
+  font-size:26px;
+  transition:filter .1s;
+  margin:auto;
 }
-.sp-item.selected .sp-check{background:var(--green);border-color:var(--green);color:#000}
-.sp-name{font-weight:700;font-size:13px;line-height:1.2;margin-bottom:2px}
-.sp-meta{font-family:var(--mono);font-size:11px;color:var(--muted)}
-.sp-badge{
-  margin-left:auto;
-  font-family:var(--mono);
-  font-size:11px;
-  padding:2px 7px;
-  border-radius:3px;
-  background:var(--panel);
-  border:1px solid var(--border);
-  color:var(--muted);
-  white-space:nowrap;
+.rec-circle:hover{filter:brightness(1.15)}
+.rec-circle:active{filter:brightness(.8)}
+.rec-circle.recording{
+  animation:rec-pulse 1s ease-in-out infinite;
+  box-shadow:0 0 18px rgba(220,60,60,.7),0 2px 6px rgba(0,0,0,.5);
+}
+@keyframes rec-pulse{
+  0%,100%{box-shadow:0 0 8px rgba(220,60,60,.5),0 2px 4px rgba(0,0,0,.5)}
+  50%{box-shadow:0 0 22px rgba(255,80,80,.9),0 2px 4px rgba(0,0,0,.5)}
+}
+.rec-label{text-align:center;font-size:12px;color:#8ab;margin-top:4px;letter-spacing:.06em}
+.rec-label.active{color:#f87070;font-weight:700}
+/* ---------- Statuszeile ---------- */
+.statusline{
+  background:#0a1628;
+  border-top:2px solid #2a5298;
+  padding:6px 20px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  min-height:36px;
+}
+.status-dot{
+  width:10px;height:10px;
+  border-radius:50%;
+  background:#333;
   flex-shrink:0;
 }
-/* ── Volume ── */
-.vol-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-.vol-label{font-family:var(--mono);font-size:11px;color:var(--muted);width:80px;flex-shrink:0}
-.vol-num{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--green);width:36px;text-align:right;flex-shrink:0}
-input[type=range]{
-  flex:1;
-  accent-color:var(--green);
-  height:4px;
-}
-/* ── Gong select ── */
+.status-dot.green{background:#50d050;box-shadow:0 0 6px #50d050}
+.status-dot.red{background:#f05050;box-shadow:0 0 6px #f05050}
+.status-dot.amber{background:#d0a020;box-shadow:0 0 6px #d0a020}
+.status-dot.blue{background:#50a0f0;box-shadow:0 0 6px #50a0f0}
+.status-text{font-size:13px;font-weight:700;letter-spacing:.04em;flex:1}
+.status-right{font-size:12px;color:#8ab;font-family:'Noto Sans',monospace}
+/* ---------- Dropdown ---------- */
 select{
   width:100%;
   padding:7px 10px;
-  background:var(--panel2);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  color:var(--text);
+  background:linear-gradient(180deg,#4a7fd4 0%,#2a5298 70%,#1e3f7a 100%);
+  border:1px solid #6fa0e8;
+  border-radius:5px;
+  color:#fff;
   font-size:13px;
-  font-family:var(--mono);
+  font-weight:700;
+  font-family:inherit;
   outline:none;
   cursor:pointer;
+  appearance:none;
+  -webkit-appearance:none;
 }
-select:focus{border-color:var(--blue)}
-/* ── Folder tree ── */
-.tree{margin-bottom:4px}
-.tree-folder{
-  margin-bottom:4px;
-}
-.tree-folder-head{
-  font-family:var(--mono);
-  font-size:11px;
-  font-weight:700;
-  color:var(--muted);
-  text-transform:uppercase;
-  letter-spacing:.08em;
-  padding:4px 6px;
-  margin-bottom:2px;
-  display:flex;
-  align-items:center;
-  gap:6px;
-  cursor:pointer;
-}
-.tree-folder-head:hover{color:var(--text)}
-.tree-files{padding-left:12px;display:flex;flex-direction:column;gap:2px}
-.tree-file{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:6px 8px;
-  border-radius:var(--radius);
-  cursor:pointer;
-  font-size:13px;
-  border:1px solid transparent;
-  transition:all .1s;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-.tree-file:hover{background:var(--panel2);border-color:var(--border)}
-.tree-file.active{background:var(--green-hl);border-color:var(--green);color:var(--green);font-weight:700}
-.tree-file svg{width:13px;height:13px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2}
-.tree-file.active svg{stroke:var(--green)}
-/* ── Recordings ── */
-.rec-item{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:8px;
-  padding:8px 10px;
-  background:var(--panel2);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  margin-bottom:4px;
-}
-.rec-item.active{border-color:var(--green);background:var(--green-hl)}
-.rec-name{font-family:var(--mono);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
-.rec-meta{font-size:11px;color:var(--muted)}
-/* ── Status bar ── */
-.statusbar{
-  margin-top:12px;
-  padding:10px 12px;
-  border-radius:var(--radius);
-  font-family:var(--mono);
-  font-size:12px;
-  background:var(--panel2);
-  border:1px solid var(--border);
-  border-left:3px solid var(--faint);
-  display:flex;
-  align-items:center;
-  gap:8px;
-  min-height:40px;
-}
-.statusbar.ok{border-left-color:var(--green);color:var(--green);background:var(--green-hl)}
-.statusbar.err{border-left-color:var(--red);color:var(--red);background:var(--red-hl)}
-.statusbar.warn{border-left-color:var(--amber);color:var(--amber);background:var(--amber-hl)}
-.statusbar.info{border-left-color:var(--blue);color:var(--blue);background:var(--blue-hl)}
-/* ── Indicator dot ── */
-.dot{
-  width:8px;height:8px;
-  border-radius:50%;
-  background:var(--faint);
-  flex-shrink:0;
-}
-.dot.green{background:var(--green);box-shadow:0 0 6px var(--green)}
-.dot.red{background:var(--red)}
-.dot.amber{background:var(--amber)}
-.dot.blink{animation:blink 1s step-end infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.1}}
-/* ── Record panel ── */
-.rec-ctrl{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:10px;
-  padding:16px;
-  background:var(--panel2);
-  border:1px solid var(--border);
-  border-radius:var(--radius-lg);
-  margin-bottom:12px;
-}
-.rec-btn-big{
-  width:56px;height:56px;
-  border-radius:50%;
-  border:2px solid var(--red);
-  background:var(--red-hl);
-  color:var(--red);
-  display:grid;
-  place-items:center;
-  cursor:pointer;
-  transition:all .15s;
-  font-size:22px;
-}
-.rec-btn-big:hover{background:var(--red);color:#fff}
-.rec-btn-big.recording{background:var(--red);color:#fff;box-shadow:0 0 16px var(--red);animation:rec-pulse 1.2s ease-in-out infinite}
-@keyframes rec-pulse{0%,100%{box-shadow:0 0 8px var(--red)}50%{box-shadow:0 0 22px var(--red)}}
-.rec-status{font-family:var(--mono);font-size:11px;text-align:center;color:var(--muted)}
-.rec-status.active{color:var(--red)}
-/* ── Field ── */
-.field{margin-bottom:12px}
-.field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:5px}
+select option{background:#1e3a6a;color:#fff}
+/* ---------- Input ---------- */
 input[type=text]{
   width:100%;
-  padding:7px 10px;
-  background:var(--panel2);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  color:var(--text);
+  padding:8px 10px;
+  background:rgba(30,60,120,.5);
+  border:1px solid #2a5298;
+  border-radius:5px;
+  color:#fff;
   font-size:13px;
-  font-family:var(--mono);
+  font-family:inherit;
   outline:none;
 }
-input[type=text]:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(88,166,255,.15)}
-/* ── Divider ── */
-.div{border:none;border-top:1px solid var(--border);margin:14px 0}
-/* ── Note ── */
-.note{font-size:12px;color:var(--muted);line-height:1.6;padding:8px 10px;background:var(--panel2);border-left:3px solid var(--border);border-radius:0 var(--radius) var(--radius) 0}
-.note strong{color:var(--text)}
-/* ── Play bar ── */
-.playbar{
-  background:var(--panel);
-  border-top:1px solid var(--border);
-  padding:12px 20px;
-  display:flex;
-  align-items:center;
-  gap:12px;
-  flex-wrap:wrap;
-  position:sticky;
-  bottom:0;
+input[type=text]:focus{border-color:#6fa0e8;background:rgba(30,60,140,.7)}
+/* ---------- Notizmeldung ---------- */
+.note{
+  font-size:12px;
+  color:#8ab;
+  line-height:1.6;
+  padding:6px 10px;
+  background:rgba(10,22,60,.5);
+  border-left:3px solid #2a5298;
 }
-/* ── empty ── */
-.empty{padding:20px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--faint)}
-/* ── responsive ── */
-@media(max-width:1024px){
-  .main{grid-template-columns:1fr;height:auto}
-  .col{border-right:none;border-bottom:1px solid var(--border);height:auto;overflow:visible}
+/* ---------- Scroll ---------- */
+.panel::-webkit-scrollbar{width:5px}
+.panel::-webkit-scrollbar-track{background:#0a1628}
+.panel::-webkit-scrollbar-thumb{background:#2a5298;border-radius:3px}
+/* ---------- responsive ---------- */
+@media(max-width:760px){
+  .main{grid-template-columns:1fr;overflow:visible}
+  .frame{overflow-y:auto}
+  body{overflow:auto}
+  .panel{border-right:none;border-bottom:1px solid #1e3a6a}
 }
-  </style>
+</style>
 </head>
 <body>
-<div class="shell">
+<div class="frame">
 
-<!-- ═══════════════════════════ TOPBAR ════════════════════════════ -->
-<header class="topbar">
-  <div class="brand">
-    <div class="brand-icon">
-      <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-    </div>
-    SONOS DURCHSAGEANLAGE
-  </div>
-  <div class="sysinfo" id="sysinfo">
-    <div class="sysval" id="si-ip">IP<span>—</span></div>
-    <div class="sysval" id="si-soco">SOCO<span>—</span></div>
-    <div class="sysval" id="si-audio">AUDIO<span>—</span></div>
-  </div>
+<!-- ========== TITELLEISTE ========== -->
+<header class="titlebar">
+  <div class="titlebar-left" id="tl-date"></div>
+  <div class="titlebar-center">DURCHSAGEANLAGE</div>
+  <div class="titlebar-right" id="tl-time"></div>
 </header>
 
-<!-- ═══════════════════════════ MAIN ════════════════════════════ -->
+<!-- ========== HAUPTBEREICH ========== -->
 <div class="main">
 
-  <!-- ─────── COL 1: LAUTSPRECHER ─────── -->
-  <div class="col">
-    <div class="sec-head">
-      LAUTSPRECHER
-      <div class="btn-group">
-        <button class="btn btn-sm" id="btnDiscover" onclick="discoverSpeakers()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-          Suchen
-        </button>
-        <button class="btn btn-sm btn-danger" onclick="stopAll()">&#9209; Stop</button>
-      </div>
+  <!-- LINKES PANEL -->
+  <div class="panel">
+
+    <!-- Lautsprecher -->
+    <div class="p-head">Lautsprecher</div>
+    <div class="hbtn-row">
+      <button class="hbtn" id="btnDiscover" onclick="discoverSpeakers()">&#128269; Suchen</button>
+      <button class="hbtn danger" onclick="stopAll()">&#9209; Stop</button>
     </div>
-    <div id="spList"><div class="empty">Lautsprecher suchen…</div></div>
+    <div id="spList"><div style="font-size:13px;color:#8ab;padding:4px 0">Lautsprecher suchen…</div></div>
 
-    <hr class="div">
-
-    <div class="sec-head">LAUTSTAERKE</div>
-    <div class="vol-row">
+    <!-- Lautstaerke -->
+    <div class="p-head" style="margin-top:6px">Lautst&auml;rke</div>
+    <div class="vol-wrap">
       <span class="vol-label">Durchsage</span>
       <input type="range" min="1" max="100" value="25" id="volRange"
              oninput="document.getElementById('volNum').textContent=this.value+'%'">
       <span class="vol-num" id="volNum">25%</span>
     </div>
 
-    <hr class="div">
+    <!-- Gong -->
+    <div class="p-head" style="margin-top:6px">Gong</div>
+    <select id="gongSel"><option value="">— Kein Gong —</option></select>
 
-    <div class="sec-head">GONG</div>
-    <div class="field">
-      <select id="gongSel"><option value="">— Kein Gong —</option></select>
-    </div>
-  </div>
-
-  <!-- ─────── COL 2: SCHNELLDURCHSAGEN ─────── -->
-  <div class="col">
-    <div class="sec-head">
-      SCHNELLDURCHSAGEN
-      <button class="btn btn-sm" onclick="loadQuick()">&#8635; Laden</button>
-    </div>
-    <div id="quickTree"><div class="empty">Lade…</div></div>
-
-    <hr class="div">
-    <div class="sec-head">
-      AUFNAHMEN
-      <button class="btn btn-sm" onclick="loadRecs()">&#8635; Laden</button>
-    </div>
-    <div id="recList"><div class="empty">Keine Aufnahmen.</div></div>
-
-    <hr class="div">
-    <div id="statusbar" class="statusbar"><span class="dot"></span>BEREIT</div>
-    <div style="height:8px"></div>
-    <button class="btn btn-primary btn-full" onclick="playSelected()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
-      DURCHSAGE STARTEN
-    </button>
-  </div>
-
-  <!-- ─────── COL 3: AUFNAHME + EINSTELLUNGEN ─────── -->
-  <div class="col">
-    <div class="sec-head">MIKROFONAUFNAHME</div>
-    <div class="rec-ctrl">
-      <div style="text-align:center">
-        <button class="rec-btn-big" id="recBtn" onclick="toggleRec()" title="Aufnahme starten/stoppen">&#9210;</button>
-        <div class="rec-status" id="recStatus">BEREIT</div>
-      </div>
+    <!-- Aufnahme -->
+    <div class="p-head" style="margin-top:6px">Mikrofonaufnahme</div>
+    <div>
+      <div class="rec-circle" id="recBtn" onclick="toggleRec()">&#9210;</div>
+      <div class="rec-label" id="recLabel">BEREIT</div>
     </div>
     <div class="note">
-      <strong>Aufnahme &amp; Direktwiedergabe:</strong><br>
-      Aufnehmen → automatisch auf SONOS abspielen.
-      SONOS unterstützt keine direkte Live-Einspeisung.
+      Aufnehmen &rarr; automatisch auf ausgew&auml;hlten SONOS abspielen.<br>
+      SONOS unterst&uuml;tzt keine direkte Einspeisung.
     </div>
 
-    <hr class="div">
-    <div class="sec-head">ORDNER ERSTELLEN</div>
-    <div class="field">
-      <label>Ordnername</label>
-      <input type="text" id="newFolder" placeholder="z. B. Schule">
-    </div>
-    <button class="btn btn-full" onclick="createFolder()">Ordner erstellen</button>
+    <!-- Neuen Ordner anlegen -->
+    <div class="p-head" style="margin-top:6px">Ordner anlegen</div>
+    <input type="text" id="newFolder" placeholder="Ordnername">
+    <button class="hbtn" style="margin-top:4px" onclick="createFolder()">Ordner erstellen</button>
 
-    <hr class="div">
-    <div class="sec-head">SYSTEMINFORMATION</div>
-    <div class="note" id="sysNote" style="font-family:var(--mono);font-size:11px;line-height:1.9">
-      Lade…
+  </div><!-- /links -->
+
+  <!-- RECHTES PANEL -->
+  <div class="panel">
+
+    <!-- Schnelldurchsagen -->
+    <div class="p-head">
+      Schnelldurchsagen
+      <button class="hbtn" style="padding:3px 10px;font-size:12px;float:right" onclick="loadQuick()">&#8635;</button>
     </div>
-  </div>
+    <div id="quickTree"><div style="font-size:13px;color:#8ab">Lade…</div></div>
+
+    <!-- Aufnahmen -->
+    <div class="p-head" style="margin-top:6px">
+      Aufnahmen
+      <button class="hbtn" style="padding:3px 10px;font-size:12px;float:right" onclick="loadRecs()">&#8635;</button>
+    </div>
+    <div id="recList"><div style="font-size:13px;color:#8ab">Keine Aufnahmen.</div></div>
+
+    <!-- Abspielen -->
+    <div style="margin-top:auto;padding-top:12px">
+      <button class="hbtn hbtn-full" onclick="playSelected()">
+        &#9654;&nbsp; DURCHSAGE STARTEN
+      </button>
+    </div>
+
+  </div><!-- /rechts -->
 
 </div><!-- /.main -->
-</div><!-- /.shell -->
+
+<!-- ========== STATUSZEILE ========== -->
+<footer class="statusline">
+  <div class="status-dot" id="sDot"></div>
+  <div class="status-text" id="sTxt">BEREIT</div>
+  <div class="status-right" id="sRight"></div>
+</footer>
+
+</div><!-- /.frame -->
 
 <script>
 'use strict';
 
-let selPath = '';
+let selPath    = '';
 let selSpeakers = new Set();
 let isRecording = false;
 
-// ── Utility ────────────────────────────────────────────────────────
-async function api(url, opts = {}) {
-  try {
-    const r = await fetch(url, {
-      headers: { 'Content-Type': 'application/json' },
-      ...opts
-    });
+// Uhr
+function updateClock(){
+  const now  = new Date();
+  const pad  = n => String(n).padStart(2,'0');
+  const days = ['So','Mo','Di','Mi','Do','Fr','Sa'];
+  document.getElementById('tl-date').textContent =
+    days[now.getDay()]+', '+pad(now.getDate())+'.'+pad(now.getMonth()+1)+'.'+String(now.getFullYear()).slice(-2);
+  document.getElementById('tl-time').textContent =
+    pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
+}
+setInterval(updateClock,1000);
+updateClock();
+
+// API
+async function api(url, opts={}){
+  try{
+    const r = await fetch(url,{headers:{'Content-Type':'application/json'},...opts});
     return await r.json();
-  } catch (e) {
-    return { success: false, error: e.message };
+  }catch(e){
+    return {success:false,error:e.message};
   }
 }
 
-function setStatus(msg, type = '') {
-  const el = document.getElementById('statusbar');
-  const types = ['ok','err','warn','info'];
-  types.forEach(t => el.classList.remove(t));
-  if (type) el.classList.add(type);
-  const colors = { ok:'green', err:'red', warn:'amber', info:'blue', '':'' };
-  el.innerHTML = `<span class="dot ${colors[type]||''}"></span>${msg}`;
+// Status
+function setStatus(msg, type=''){
+  const dot  = document.getElementById('sDot');
+  const txt  = document.getElementById('sTxt');
+  const map  = {ok:'green',err:'red',warn:'amber',info:'blue','':''};
+  dot.className = 'status-dot '+(map[type]||'');
+  txt.textContent = msg;
 }
 
-function iconSVG(d) {
-  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${d}</svg>`;
-}
-
-// ── System Status ──────────────────────────────────────────────────
-async function loadStatus() {
+// Systemstatus laden
+async function loadSysStatus(){
   const d = await api('/api/status');
-  const si = id => document.getElementById(id);
-  si('si-ip').innerHTML  = `IP <span>${d.ip || '—'}:${d.port||5000}</span>`;
-  si('si-soco').innerHTML  = `SOCO <span style="color:${d.soco?'var(--green)':'var(--red)'}">${d.soco?'OK':'FEHLT'}</span>`;
-  si('si-audio').innerHTML = `AUDIO <span style="color:${d.audio?'var(--green)':'var(--amber)'}">${d.audio?'OK':'FEHLT'}</span>`;
-  document.getElementById('sysNote').innerHTML =
-    `SERVER&nbsp;&nbsp;: ${d.ip}:${d.port||5000}\nSONOS&nbsp;&nbsp;&nbsp;: ${d.soco?'soco installiert':'pip install soco'}\nAUDIO&nbsp;&nbsp;&nbsp;: ${d.audio?'sounddevice OK':'pip install sounddevice soundfile numpy'}\nMEDIA&nbsp;&nbsp;&nbsp;: http://${d.ip}:${d.port||5000}/media/…`
-    .split('\n').join('<br>');
-  return d;
+  document.getElementById('sRight').textContent =
+    `${d.ip}:${d.port||5000}  |  SOCO: ${d.soco?'OK':'FEHLT'}  |  AUDIO: ${d.audio?'OK':'FEHLT'}`;
 }
 
-// ── Speakers ────────────────────────────────────────────────────────
-function renderSpeakers(list) {
+// ---- Lautsprecher ----
+function renderSpeakers(list){
   const el = document.getElementById('spList');
-  if (!list || !list.length) {
-    el.innerHTML = '<div class="empty">Keine SONOS-Geräte gefunden.</div>';
+  if(!list||!list.length){
+    el.innerHTML='<div style="font-size:13px;color:#8ab">Keine SONOS-Geräte gefunden.</div>';
     return;
   }
-  el.innerHTML = '';
-  list.forEach(s => {
-    const div = document.createElement('div');
-    div.className = 'sp-item' + (selSpeakers.has(s.ip) ? ' selected' : '');
-    div.dataset.ip = s.ip;
-    div.innerHTML = `
-      <div class="sp-check">${selSpeakers.has(s.ip) ? checkSVG() : ''}</div>
-      <div style="flex:1;min-width:0">
-        <div class="sp-name">${s.name}</div>
-        <div class="sp-meta">${s.ip} &nbsp;·&nbsp; ${s.group}</div>
-      </div>
-      <div class="sp-badge">${s.volume}%</div>`;
-    div.addEventListener('click', () => toggleSpeaker(s.ip, div));
-    el.appendChild(div);
+  el.innerHTML='';
+  // Tabelle wie im Lok-HMI
+  const tbl = document.createElement('table');
+  tbl.className='tbl';
+  list.forEach(s=>{
+    const tr = document.createElement('tr');
+    const sel = selSpeakers.has(s.ip);
+    tr.innerHTML=`
+      <td style="font-weight:700;color:#fff">${s.name}<br><span style="font-size:11px;color:#8ab;font-weight:400">${s.ip}</span></td>
+      <td><div class="val${sel?' sel':''}" data-ip="${s.ip}" onclick="toggleSp('${s.ip}',this)">${sel?'EIN':'AUS'}</div></td>
+      <td><div class="val" style="cursor:default">${s.volume}%</div></td>`;
+    tbl.appendChild(tr);
   });
+  el.appendChild(tbl);
 }
 
-function checkSVG() {
-  return `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
-}
-
-function toggleSpeaker(ip, el) {
-  if (selSpeakers.has(ip)) {
+function toggleSp(ip, el){
+  if(selSpeakers.has(ip)){
     selSpeakers.delete(ip);
-    el.classList.remove('selected');
-    el.querySelector('.sp-check').innerHTML = '';
-  } else {
+    el.classList.remove('sel');
+    el.textContent='AUS';
+  }else{
     selSpeakers.add(ip);
-    el.classList.add('selected');
-    el.querySelector('.sp-check').innerHTML = checkSVG();
+    el.classList.add('sel');
+    el.textContent='EIN';
   }
 }
 
-async function discoverSpeakers() {
-  const btn = document.getElementById('btnDiscover');
-  btn.textContent = '…';
-  setStatus('Suche SONOS-Geräte im Netzwerk…', 'info');
-  const d = await api('/api/speakers/discover', { method: 'POST', body: '{}' });
-  renderSpeakers(d.speakers || []);
-  if ((d.speakers || []).length) {
-    setStatus(`${d.speakers.length} Lautsprecher gefunden`, 'ok');
-  } else {
-    setStatus('Keine SONOS-Geräte gefunden', 'warn');
-  }
-  btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> Suchen';
+async function discoverSpeakers(){
+  const btn=document.getElementById('btnDiscover');
+  btn.textContent='…';
+  setStatus('Suche SONOS…','info');
+  const d=await api('/api/speakers/discover',{method:'POST',body:'{}'});
+  renderSpeakers(d.speakers||[]);
+  setStatus((d.speakers||[]).length?`${d.speakers.length} Lautsprecher gefunden`:'Keine Geräte gefunden',
+            (d.speakers||[]).length?'ok':'warn');
+  btn.textContent='&#128269; Suchen';
+  btn.innerHTML='&#128269; Suchen';
 }
 
-// ── Gongs ────────────────────────────────────────────────────────────
-async function loadGongs() {
-  const d = await api('/api/gongs');
-  const sel = document.getElementById('gongSel');
-  sel.innerHTML = '<option value="">— Kein Gong —</option>';
-  (d.gongs || []).forEach(g => {
-    const o = document.createElement('option');
-    o.value = g.path; o.textContent = g.name;
-    sel.appendChild(o);
+// ---- Gong ----
+async function loadGongs(){
+  const d=await api('/api/gongs');
+  const sel=document.getElementById('gongSel');
+  sel.innerHTML='<option value="">— Kein Gong —</option>';
+  (d.gongs||[]).forEach(g=>{
+    const o=document.createElement('option');
+    o.value=g.path;o.textContent=g.name;sel.appendChild(o);
   });
 }
 
-// ── Folder tree ───────────────────────────────────────────────────────
-function makeFileNode(file) {
-  const el = document.createElement('div');
-  el.className = 'tree-file' + (selPath === file.path ? ' active' : '');
-  el.innerHTML = `<svg viewBox="0 0 24 24"><polygon points="11,3 22,12 11,21" fill="currentColor" stroke="none"/></svg>${file.name}`;
-  el.title = file.path;
-  el.addEventListener('click', () => {
-    selPath = file.path;
-    document.querySelectorAll('.tree-file, .rec-item').forEach(e => e.classList.remove('active'));
-    el.classList.add('active');
-    setStatus('BEREIT: ' + file.name, 'info');
+// ---- Dateibaum ----
+function makeRow(file){
+  const div=document.createElement('div');
+  div.className='frow'+(selPath===file.path?' active':'');
+  div.innerHTML=`<span class="frow-name">${file.name}</span><span class="frow-meta">${(file.size/1024).toFixed(0)} KB</span>`;
+  div.addEventListener('click',()=>{
+    selPath=file.path;
+    document.querySelectorAll('.frow').forEach(e=>e.classList.remove('active'));
+    div.classList.add('active');
+    setStatus('BEREIT: '+file.name,'info');
   });
-  return el;
+  return div;
 }
 
-function makeFolder(node) {
-  const wrap = document.createElement('div');
-  wrap.className = 'tree-folder';
-  if (node.name) {
-    const head = document.createElement('div');
-    head.className = 'tree-folder-head';
-    head.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${node.name}`;
-    wrap.appendChild(head);
+function renderNode(node, cont, isRoot){
+  if(!isRoot&&node.name){
+    const h=document.createElement('div');
+    h.className='folder-head';
+    h.innerHTML=`&#128193;&nbsp;${node.name}`;
+    cont.appendChild(h);
   }
-  const files = document.createElement('div');
-  files.className = 'tree-files';
-  (node.files || []).forEach(f => files.appendChild(makeFileNode(f)));
-  (node.folders || []).forEach(f => files.appendChild(makeFolder(f)));
-  wrap.appendChild(files);
-  return wrap;
+  const wrap=document.createElement('div');
+  wrap.className='flist';
+  if(!isRoot){wrap.style.paddingLeft='10px'}
+  (node.files||[]).forEach(f=>wrap.appendChild(makeRow(f)));
+  (node.folders||[]).forEach(f=>renderNode(f,wrap,false));
+  cont.appendChild(wrap);
 }
 
-async function loadQuick() {
-  const d = await api('/api/schnelldurchsagen');
-  const c = document.getElementById('quickTree');
-  c.innerHTML = '';
-  const hasFiles = (n) => (n.files||[]).length > 0 || (n.folders||[]).some(hasFiles);
-  if (!hasFiles(d)) {
-    c.innerHTML = '<div class="empty">Keine Audiodateien in schnelldurchsagen/</div>';
-    return;
-  }
-  // Root-Ebene direkt, Unterordner mit Header
-  (d.files || []).forEach(f => c.appendChild(makeFileNode(f)));
-  (d.folders || []).forEach(f => c.appendChild(makeFolder(f)));
+async function loadQuick(){
+  const d=await api('/api/schnelldurchsagen');
+  const c=document.getElementById('quickTree');c.innerHTML='';
+  const any=n=>((n.files||[]).length>0||(n.folders||[]).some(any));
+  if(!any(d)){c.innerHTML='<div style="font-size:13px;color:#8ab">Keine Audiodateien.</div>';return;}
+  renderNode(d,c,true);
 }
 
-// ── Recordings ────────────────────────────────────────────────────────
-async function loadRecs() {
-  const d = await api('/api/recordings');
-  const el = document.getElementById('recList');
-  const recs = d.recordings || [];
-  if (!recs.length) { el.innerHTML = '<div class="empty">Keine Aufnahmen.</div>'; return; }
-  el.innerHTML = '';
-  recs.forEach(r => {
-    const div = document.createElement('div');
-    div.className = 'rec-item' + (selPath === r.path ? ' active' : '');
-    div.innerHTML = `
-      <div><div class="rec-name">${r.name}</div><div class="rec-meta">${(r.size/1024).toFixed(0)} KB</div></div>
-      <button class="btn btn-sm" onclick="selRec('${r.path}',this)">Wählen</button>`;
-    el.appendChild(div);
+async function loadRecs(){
+  const d=await api('/api/recordings');
+  const el=document.getElementById('recList');
+  const recs=d.recordings||[];
+  if(!recs.length){el.innerHTML='<div style="font-size:13px;color:#8ab">Keine Aufnahmen.</div>';return;}
+  el.innerHTML='';
+  const wrap=document.createElement('div');wrap.className='flist';
+  recs.forEach(r=>{
+    const div=document.createElement('div');
+    div.className='frow'+(selPath===r.path?' active':'');
+    div.innerHTML=`<span class="frow-name">${r.name}</span><span class="frow-meta">${(r.size/1024).toFixed(0)} KB</span>`;
+    div.addEventListener('click',()=>{
+      selPath=r.path;
+      document.querySelectorAll('.frow').forEach(e=>e.classList.remove('active'));
+      div.classList.add('active');
+      setStatus('BEREIT: '+r.name,'info');
+    });
+    wrap.appendChild(div);
   });
+  el.appendChild(wrap);
 }
 
-function selRec(path, btn) {
-  selPath = path;
-  document.querySelectorAll('.tree-file, .rec-item').forEach(e => e.classList.remove('active'));
-  btn.closest('.rec-item').classList.add('active');
-  setStatus('BEREIT: ' + path.split('/').pop(), 'info');
-}
-
-// ── Recording ─────────────────────────────────────────────────────────
-async function toggleRec() {
-  const btn = document.getElementById('recBtn');
-  const lbl = document.getElementById('recStatus');
-  if (!isRecording) {
-    const d = await api('/api/record/start', { method: 'POST', body: '{}' });
-    if (d.success) {
-      isRecording = true;
+// ---- Aufnahme ----
+async function toggleRec(){
+  const btn=document.getElementById('recBtn');
+  const lbl=document.getElementById('recLabel');
+  if(!isRecording){
+    const d=await api('/api/record/start',{method:'POST',body:'{}'});
+    if(d.success){
+      isRecording=true;
       btn.classList.add('recording');
-      btn.innerHTML = '&#9209;';
-      lbl.textContent = 'REC ●';
+      btn.innerHTML='&#9209;';
+      lbl.textContent='REC ●';
       lbl.classList.add('active');
-      setStatus('Aufnahme läuft…', 'warn');
-    } else {
-      setStatus('Aufnahmefehler: ' + (d.error || 'unbekannt'), 'err');
-    }
-  } else {
-    const d = await api('/api/record/stop', { method: 'POST', body: '{}' });
-    isRecording = false;
+      setStatus('Aufnahme läuft…','warn');
+    }else setStatus('Aufnahme: '+(d.error||'Fehler'),'err');
+  }else{
+    const d=await api('/api/record/stop',{method:'POST',body:'{}'});
+    isRecording=false;
     btn.classList.remove('recording');
-    btn.innerHTML = '&#9210;';
-    lbl.textContent = 'BEREIT';
+    btn.innerHTML='&#9210;';
+    lbl.textContent='BEREIT';
     lbl.classList.remove('active');
-    if (d.success) {
-      setStatus('Gespeichert: ' + d.filename, 'ok');
+    if(d.success){
+      setStatus('Gespeichert: '+d.filename,'ok');
       await loadRecs();
-      // Direkt abspielen falls Lautsprecher ausgewählt
-      if (selSpeakers.size && d.path) {
-        selPath = d.path;
-        await playSelected();
-      }
-    } else {
-      setStatus('Speicherfehler: ' + (d.error || ''), 'err');
-    }
+      if(selSpeakers.size&&d.path){selPath=d.path;await playSelected();}
+    }else setStatus('Speicherfehler: '+(d.error||''),'err');
   }
 }
 
-// ── Play ──────────────────────────────────────────────────────────────
-async function playSelected() {
-  if (!selPath) { setStatus('Keine Datei ausgewählt', 'err'); return; }
-  if (!selSpeakers.size) { setStatus('Keinen Lautsprecher ausgewählt', 'err'); return; }
-  setStatus('Sende Durchsage…', 'info');
-  const d = await api('/api/play', {
-    method: 'POST',
-    body: JSON.stringify({
+// ---- Abspielen ----
+async function playSelected(){
+  if(!selPath){setStatus('Keine Datei ausgewählt','err');return;}
+  if(!selSpeakers.size){setStatus('Keinen Lautsprecher ausgewählt','err');return;}
+  setStatus('Sende Durchsage…','info');
+  const d=await api('/api/play',{
+    method:'POST',
+    body:JSON.stringify({
       audio_path: selPath,
       gong_path:  document.getElementById('gongSel').value,
       speakers:   Array.from(selSpeakers),
-      volume:     parseInt(document.getElementById('volRange').value, 10)
+      volume:     parseInt(document.getElementById('volRange').value,10)
     })
   });
-  if (d.success) {
-    setStatus('DURCHSAGE AKTIV  →  ' + selPath.split('/').pop(), 'ok');
-  } else {
-    setStatus('FEHLER: ' + (d.error || 'Unbekannter Fehler'), 'err');
-  }
+  if(d.success)setStatus('DURCHSAGE AKTIV  ►  '+selPath.split('/').pop(),'ok');
+  else setStatus('FEHLER: '+(d.error||'unbekannt'),'err');
 }
 
-async function stopAll() {
-  const d = await api('/api/stop', {
-    method: 'POST',
-    body: JSON.stringify({ speakers: Array.from(selSpeakers) })
+async function stopAll(){
+  const d=await api('/api/stop',{
+    method:'POST',
+    body:JSON.stringify({speakers:Array.from(selSpeakers)})
   });
-  setStatus(d.success ? 'Wiedergabe gestoppt' : ('Stop-Fehler: ' + (d.errors||[]).join(', ')),
-            d.success ? 'ok' : 'err');
+  setStatus(d.success?'Wiedergabe gestoppt':'Stop-Fehler: '+(d.errors||[]).join(', '),
+            d.success?'ok':'err');
 }
 
-// ── Folder create ─────────────────────────────────────────────────────
-async function createFolder() {
-  const name = document.getElementById('newFolder').value.trim();
-  if (!name) { setStatus('Bitte Ordnername eingeben', 'err'); return; }
-  const d = await api('/api/folder/create', { method: 'POST', body: JSON.stringify({ name }) });
-  if (d.success) {
-    document.getElementById('newFolder').value = '';
-    setStatus('Ordner erstellt: ' + name, 'ok');
-    await loadQuick();
-  } else {
-    setStatus('Fehler: ' + (d.error || ''), 'err');
-  }
+async function createFolder(){
+  const name=document.getElementById('newFolder').value.trim();
+  if(!name){setStatus('Ordnername eingeben','err');return;}
+  const d=await api('/api/folder/create',{method:'POST',body:JSON.stringify({name})});
+  if(d.success){document.getElementById('newFolder').value='';setStatus('Ordner erstellt: '+name,'ok');await loadQuick();}
+  else setStatus('Fehler: '+(d.error||''),'err');
 }
 
-// ── Init ──────────────────────────────────────────────────────────────
-(async () => {
-  await loadStatus();
+// ---- Init ----
+(async()=>{
+  await loadSysStatus();
   await loadGongs();
   await loadQuick();
   await loadRecs();

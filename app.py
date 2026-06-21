@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-SonosDurchsage v2 - Produktionsreifes SONOS-Durchsagesystem
-Abspielen via Flask-eigenem Static-File-Server (kein separater HTTP-Thread)
+SonosDurchsage v3
+Abspielen: Flask-eigener /media/-Server, kein separater Thread-Webserver.
+SONOS muss den Flask-Host per HTTP erreichen koennen.
 """
 
 import os
@@ -25,7 +26,7 @@ try:
     SOCO_AVAILABLE = True
 except ImportError:
     SOCO_AVAILABLE = False
-    log.warning("soco nicht installiert – pip install soco")
+    log.warning("soco nicht installiert - pip install soco")
 
 try:
     import sounddevice as sd
@@ -34,7 +35,7 @@ try:
     AUDIO_AVAILABLE = True
 except ImportError:
     AUDIO_AVAILABLE = False
-    log.warning("sounddevice/soundfile nicht installiert – pip install sounddevice soundfile numpy")
+    log.warning("sounddevice/soundfile/numpy fehlt - pip install sounddevice soundfile numpy")
 
 app = Flask(__name__)
 CORS(app)
@@ -50,16 +51,16 @@ for d in [GONGS_DIR, RECORDINGS_DIR, SCHNELL_DIR]:
 
 _recording_chunks: list = []
 _recording_active: bool = False
-_recording_stream = None
-_discovered: list = []
-_flask_port: int = 5000
+_recording_stream        = None
+_discovered: list        = []
+_flask_port: int         = 5000
 
 AUDIO_EXTS = {".mp3", ".wav", ".ogg", ".flac", ".m4a", ".aac"}
 
 
-# ---------------------------------------------------------------------------
-# Hilfsfunktionen
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------
+# Netzwerk
+# -----------------------------------------------------------------------
 
 def local_ip() -> str:
     try:
@@ -73,11 +74,15 @@ def local_ip() -> str:
 
 
 def file_url(rel_path: str) -> str:
-    """Baut eine von SONOS erreichbare HTTP-URL fuer eine Datei im Projektverzeichnis."""
-    ip = local_ip()
+    """HTTP-URL fuer SONOS, erreichbar vom Netzwerk."""
+    ip    = local_ip()
     clean = rel_path.lstrip("/").replace("\\", "/")
     return f"http://{ip}:{_flask_port}/media/{clean}"
 
+
+# -----------------------------------------------------------------------
+# SONOS Discovery
+# -----------------------------------------------------------------------
 
 def discover_sonos() -> list:
     global _discovered
@@ -89,20 +94,25 @@ def discover_sonos() -> list:
         for d in devices:
             try:
                 _discovered.append({
-                    "ip":     d.ip_address,
-                    "name":   d.player_name,
+                    "ip":    d.ip_address,
+                    "name":  d.player_name,
                     "volume": d.volume,
-                    "model":  getattr(d, 'speaker_info', {}).get('model_name', ''),
-                    "group":  d.group.coordinator.player_name if d.group else "Solo"
+                    "group": d.group.coordinator.player_name if d.group else "Solo"
                 })
             except Exception as e:
-                log.warning(f"Speaker-Info-Fehler {d.ip_address}: {e}")
-        log.info(f"SONOS-Discovery: {len(_discovered)} Geraet(e) gefunden")
+                log.warning(f"Speaker-Info {d.ip_address}: {e}")
+        log.info(f"Discovery: {len(_discovered)} Geraet(e)")
         return _discovered
     except Exception as e:
         log.error(f"Discovery-Fehler: {e}")
         return []
 
+
+# -----------------------------------------------------------------------
+# Abspielen (KERN-FIX)
+# Flask laeuft threaded=True, der /media/-Endpunkt bedient SONOS
+# direkt aus demselben Prozess.
+# -----------------------------------------------------------------------
 
 def play_on_speakers(speaker_ips: list, audio_path: str,
                      gong_path: str = None, volume: int = None) -> dict:
@@ -114,67 +124,79 @@ def play_on_speakers(speaker_ips: list, audio_path: str,
             dev = soco.SoCo(ip)
             if volume is not None:
                 dev.volume = max(0, min(100, int(volume)))
+
             if gong_path:
-                url = file_url(gong_path)
-                log.info(f"Gong -> {ip}: {url}")
-                dev.play_uri(url, title="Gong")
-                # Warte bis Gong fertig (max. 8 Sekunden)
-                for _ in range(40):
+                gong_url = file_url(gong_path)
+                log.info(f"Gong  -> {ip}  {gong_url}")
+                dev.play_uri(gong_url, title="Gong")
+                # Warten bis Gong beendet (max 10 s)
+                for _ in range(50):
                     time.sleep(0.2)
                     try:
-                        if dev.get_current_transport_info()['current_transport_state'] != 'PLAYING':
+                        state = dev.get_current_transport_info()[
+                            'current_transport_state']
+                        if state != 'PLAYING':
                             break
                     except Exception:
                         break
-            url = file_url(audio_path)
-            log.info(f"Durchsage -> {ip}: {url}")
-            dev.play_uri(url, title="Durchsage")
+
+            audio_url = file_url(audio_path)
+            log.info(f"Audio -> {ip}  {audio_url}")
+            dev.play_uri(audio_url, title="Durchsage")
+
         except Exception as e:
             log.error(f"Abspielfehler {ip}: {e}")
             errors.append(f"{ip}: {e}")
+
     if errors:
         return {"success": False, "error": ", ".join(errors)}
     return {"success": True}
 
 
-def folder_tree(root: Path, rel_root: Path) -> dict:
-    node = {"name": root.name, "rel": str(root.relative_to(rel_root)), "files": [], "folders": []}
-    if root.is_dir():
-        for item in sorted(root.iterdir()):
-            if item.name.startswith('.'):
-                continue
-            if item.is_dir():
-                node["folders"].append(folder_tree(item, rel_root))
-            elif item.suffix.lower() in AUDIO_EXTS:
-                node["files"].append({
-                    "name": item.name,
-                    "path": "schnelldurchsagen/" + str(item.relative_to(SCHNELL_DIR)).replace("\\", "/"),
-                    "size": item.stat().st_size
-                })
+# -----------------------------------------------------------------------
+# Dateibaumfunktion
+# -----------------------------------------------------------------------
+
+def folder_tree(root: Path, base: Path) -> dict:
+    node = {"name": root.name, "files": [], "folders": []}
+    if not root.is_dir():
+        return node
+    for item in sorted(root.iterdir()):
+        if item.name.startswith('.'):
+            continue
+        if item.is_dir():
+            node["folders"].append(folder_tree(item, base))
+        elif item.suffix.lower() in AUDIO_EXTS:
+            node["files"].append({
+                "name": item.name,
+                "path": "schnelldurchsagen/" + str(
+                    item.relative_to(SCHNELL_DIR)).replace("\\", "/"),
+                "size": item.stat().st_size
+            })
     return node
 
 
-# ---------------------------------------------------------------------------
-# Media-Serving (alle Audiodateien ueber einen einzigen Route-Handler)
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------
+# Media-Route (Flask bedient Audiodateien fuer SONOS)
+# -----------------------------------------------------------------------
 
 @app.route("/media/<path:filename>")
 def serve_media(filename):
-    """Liefert Dateien aus dem gesamten Projektverzeichnis an SONOS."""
     target = (BASE_DIR / filename).resolve()
     try:
         target.relative_to(BASE_DIR)
     except ValueError:
         abort(403)
     if not target.exists():
-        log.warning(f"Media nicht gefunden: {filename}")
+        log.warning(f"Nicht gefunden: {filename}")
         abort(404)
-    return send_from_directory(target.parent, target.name)
+    log.info(f"SONOS ruft ab: {filename}")
+    return send_from_directory(str(target.parent), target.name)
 
 
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------
 # API
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------
 
 @app.route("/")
 def index():
@@ -193,8 +215,7 @@ def api_status():
 
 @app.route("/api/speakers/discover", methods=["POST"])
 def api_discover():
-    speakers = discover_sonos()
-    return jsonify({"speakers": speakers})
+    return jsonify({"speakers": discover_sonos()})
 
 
 @app.route("/api/speakers")
@@ -205,10 +226,9 @@ def api_speakers():
 @app.route("/api/gongs")
 def api_gongs():
     gongs = []
-    if GONGS_DIR.exists():
-        for f in sorted(GONGS_DIR.iterdir()):
-            if f.suffix.lower() in AUDIO_EXTS:
-                gongs.append({"name": f.name, "path": f"assets/gongs/{f.name}"})
+    for f in sorted(GONGS_DIR.iterdir()) if GONGS_DIR.exists() else []:
+        if f.suffix.lower() in AUDIO_EXTS:
+            gongs.append({"name": f.name, "path": f"assets/gongs/{f.name}"})
     return jsonify({"gongs": gongs})
 
 
@@ -245,8 +265,8 @@ def api_rec_start():
         if _recording_active:
             _recording_chunks.append(indata.copy())
 
-    _recording_stream = sd.InputStream(samplerate=44100, channels=1, dtype='float32',
-                                        callback=callback)
+    _recording_stream = sd.InputStream(
+        samplerate=44100, channels=1, dtype='float32', callback=callback)
     _recording_stream.start()
     log.info("Aufnahme gestartet")
     return jsonify({"success": True})
@@ -263,60 +283,57 @@ def api_rec_stop():
         _recording_stream.close()
         _recording_stream = None
     if not _recording_chunks:
-        return jsonify({"success": False, "error": "Keine Audiodaten aufgezeichnet"})
+        return jsonify({"success": False, "error": "Keine Audiodaten"})
     audio = np.concatenate(_recording_chunks, axis=0)
     fname = f"aufnahme_{int(time.time())}.wav"
     fpath = RECORDINGS_DIR / fname
     sf.write(str(fpath), audio, 44100)
-    log.info(f"Aufnahme gespeichert: {fname} ({fpath.stat().st_size} Bytes)")
+    log.info(f"Gespeichert: {fname}")
     return jsonify({"success": True, "filename": fname,
                     "path": f"assets/recordings/{fname}"})
 
 
 @app.route("/api/play", methods=["POST"])
 def api_play():
-    data = request.get_json(force=True)
+    data       = request.get_json(force=True)
     audio_path = (data.get("audio_path") or "").strip()
     gong_path  = (data.get("gong_path")  or "").strip()
     speakers   = data.get("speakers", [])
     volume     = data.get("volume")
 
     if not audio_path:
-        return jsonify({"success": False, "error": "Kein Audiodateipfad angegeben"})
+        return jsonify({"success": False, "error": "Kein Pfad"})
     if not speakers:
-        return jsonify({"success": False, "error": "Keine Lautsprecher ausgewaehlt"})
+        return jsonify({"success": False, "error": "Keine Lautsprecher"})
 
-    abs_path = (BASE_DIR / audio_path).resolve()
+    abs_audio = (BASE_DIR / audio_path).resolve()
     try:
-        abs_path.relative_to(BASE_DIR)
+        abs_audio.relative_to(BASE_DIR)
     except ValueError:
-        return jsonify({"success": False, "error": "Ungültiger Pfad"})
-    if not abs_path.exists():
-        return jsonify({"success": False, "error": f"Datei nicht gefunden: {audio_path}"})
+        return jsonify({"success": False, "error": "Ungueltiger Pfad"})
+    if not abs_audio.exists():
+        return jsonify({"success": False,
+                        "error": f"Datei nicht gefunden: {audio_path}"})
 
     if gong_path:
-        gong_abs = (BASE_DIR / gong_path).resolve()
-        if not gong_abs.exists():
+        if not (BASE_DIR / gong_path).resolve().exists():
             gong_path = ""
 
-    def _play():
+    def _bg():
         play_on_speakers(speakers, audio_path,
-                         gong_path if gong_path else None, volume)
-
-    threading.Thread(target=_play, daemon=True).start()
-    log.info(f"Durchsage gestartet: {audio_path} -> {speakers}")
-    return jsonify({"success": True,
-                    "audio_url": file_url(audio_path),
-                    "speakers": speakers})
+                         gong_path or None, volume)
+    threading.Thread(target=_bg, daemon=True).start()
+    log.info(f"Durchsage: {audio_path} -> {speakers}")
+    return jsonify({"success": True, "audio_url": file_url(audio_path)})
 
 
 @app.route("/api/stop", methods=["POST"])
 def api_stop():
     if not SOCO_AVAILABLE:
         return jsonify({"success": False, "error": "soco fehlt"})
-    data     = request.get_json(force=True)
-    targets  = data.get("speakers") or [s["ip"] for s in _discovered]
-    errors   = []
+    data    = request.get_json(force=True)
+    targets = data.get("speakers") or [s["ip"] for s in _discovered]
+    errors  = []
     for ip in targets:
         try:
             soco.SoCo(ip).stop()
@@ -330,10 +347,8 @@ def api_volume():
     if not SOCO_AVAILABLE:
         return jsonify({"success": False, "error": "soco fehlt"})
     data = request.get_json(force=True)
-    ip   = data.get("ip")
-    vol  = data.get("volume", 30)
     try:
-        soco.SoCo(ip).volume = max(0, min(100, int(vol)))
+        soco.SoCo(data["ip"]).volume = max(0, min(100, int(data.get("volume", 30))))
         return jsonify({"success": True})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
@@ -342,33 +357,35 @@ def api_volume():
 @app.route("/api/folder/create", methods=["POST"])
 def api_folder_create():
     data   = request.get_json(force=True)
-    name   = (data.get("name") or "").strip()
+    name   = (data.get("name")   or "").strip()
     parent = (data.get("parent") or "").strip()
     if not name:
-        return jsonify({"success": False, "error": "Kein Name angegeben"})
+        return jsonify({"success": False, "error": "Kein Name"})
     target = (SCHNELL_DIR / parent / name).resolve()
     try:
         target.relative_to(SCHNELL_DIR)
     except ValueError:
-        return jsonify({"success": False, "error": "Ungültiger Pfad"})
+        return jsonify({"success": False, "error": "Ungueltiger Pfad"})
     target.mkdir(parents=True, exist_ok=True)
     return jsonify({"success": True})
 
 
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------
 # Start
-# ---------------------------------------------------------------------------
+# -----------------------------------------------------------------------
 
 if __name__ == "__main__":
     import sys
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 5000
+    port        = int(sys.argv[1]) if len(sys.argv) > 1 else 5000
     _flask_port = port
-    ip = local_ip()
-    log.info("="*60)
-    log.info(f"  SonosDurchsage v2 gestartet")
-    log.info(f"  URL        : http://{ip}:{port}")
-    log.info(f"  SONOS      : {'OK  (soco verfuegbar)' if SOCO_AVAILABLE else 'FEHLT -> pip install soco'}")
-    log.info(f"  Audio      : {'OK  (sounddevice verfuegbar)' if AUDIO_AVAILABLE else 'FEHLT -> pip install sounddevice soundfile numpy'}")
-    log.info(f"  Media-Base : {BASE_DIR}")
-    log.info("="*60)
+    ip          = local_ip()
+    log.info("=" * 60)
+    log.info("  SonosDurchsage v3")
+    log.info(f"  URL    : http://{ip}:{port}")
+    log.info(f"  Media  : http://{ip}:{port}/media/...")
+    log.info(f"  SOCO   : {'OK' if SOCO_AVAILABLE else 'FEHLT -> pip install soco'}")
+    log.info(f"  AUDIO  : {'OK' if AUDIO_AVAILABLE else 'FEHLT -> pip install sounddevice soundfile numpy'}")
+    log.info("=" * 60)
+    # threaded=True ist entscheidend: SONOS-Anfragen an /media/ koennen
+    # parallel zu laufenden play_uri()-Aufrufen bedient werden.
     app.run(host="0.0.0.0", port=port, debug=False, threaded=True)
