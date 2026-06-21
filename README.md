@@ -1,57 +1,63 @@
-# SonosDurchsage v2
+# 🔊 SONOS Durchsagesystem
 
-Professionelles, lokales Durchsagesystem für SONOS-Lautsprecher im Netzwerk.  
-Web-basiertes Operator-Interface im HMI-Stil (SCADA-Design).
+Ein lokales Durchsagesystem für SONOS Lautsprecher mit moderner Web-Oberfläche.
 
 ## Features
 
-- Automatische Erkennung aller SONOS-Lautsprecher im Netzwerk
-- Schnelldurchsagen aus Ordnerstruktur (`schnelldurchsagen/`)
-- Mikrofonaufnahme → direkt auf SONOS abspielen
-- Wählbarer Gong vor jeder Durchsage (`assets/gongs/`)
-- Lautstärke pro Durchsage einstellbar
-- Robustes Abspielen: Audiodateien werden über Flask's eigenen HTTP-Server an SONOS geliefert (kein separater Thread-Server mehr)
-- Professionelles HMI-Interface (dunkel, monospace, Industriedesign)
+- 🔍 **Automatische SONOS-Erkennung** – alle Lautsprecher im Netzwerk werden erkannt
+- 📁 **Schnelldurchsagen** – Audiodateien in Ordnerstruktur
+- 🎙️ **Aufnahme & Abspielen** – Mikrofon aufnehmen, direkt auf SONOS abspielen
+- 🔔 **Gong-Auswahl** – wählbarer Gong vor jeder Durchsage
+- 🎚️ **Lautstärke-Kontrolle** – pro Lautsprecher einstellbar
+- 🌐 **Lokale Web-App** – läuft komplett im Browser
 
 ## Installation
 
 ```bash
+# 1. Repository klonen
 git clone https://github.com/jakobneukirchner/SonosDurchsage.git
 cd SonosDurchsage
-python -m venv .venv
-source .venv/bin/activate      # Linux/macOS
-# .venv\Scripts\activate       # Windows
+
+# 2. Abhängigkeiten installieren
 pip install -r requirements.txt
+
+# 3. Starten
 python app.py
 ```
 
-Browser öffnen: **http://localhost:5000**
-
-> SONOS muss sich im selben Netzwerk befinden und die IP des Servers erreichen können.
+Dann im Browser öffnen: **http://localhost:5000**
 
 ## Projektstruktur
 
 ```
 SonosDurchsage/
-├── app.py
-├── requirements.txt
-├── README.md
-├── templates/index.html
+├── app.py                  # Flask Backend
+├── requirements.txt        # Python Abhängigkeiten
+├── templates/
+│   └── index.html          # Web-Oberfläche
 ├── assets/
-│   ├── gongs/          ← Gong-Dateien hier ablegen (.mp3 / .wav)
-│   └── recordings/     ← Mikrofon-Aufnahmen (automatisch)
-└── schnelldurchsagen/
+│   ├── gongs/              # Gong-Dateien (.mp3)
+│   │   ├── gong_classic.mp3
+│   │   ├── gong_soft.mp3
+│   │   └── gong_double.mp3
+│   └── recordings/         # Aufnahmen (wird automatisch erstellt)
+└── schnelldurchsagen/      # Eigene Audiodateien
     ├── Allgemein/
-    ├── Bahnhof/
-    └── Notfall/
+    ├── Notfall/
+    └── Information/
 ```
 
-## Technische Details (Abspielen)
+## Gong-Dateien hinzufügen
 
-SONOS benötigt eine per HTTP erreichbare Audiodatei.  
-Die App dient Dateien über die Route `/media/<pfad>` – derselbe Flask-Prozess, kein externer Server.  
-SONOS ruft dann z. B. `http://192.168.1.100:5000/media/assets/gongs/gong.mp3` ab.
+Kopiere `.mp3`-Dateien in den Ordner `assets/gongs/`. Sie erscheinen automatisch in der Auswahl.
 
-## Lizenz
+## Schnelldurchsagen hinzufügen
 
-MIT
+Erstelle Unterordner in `schnelldurchsagen/` und lege dort `.mp3`-Dateien ab.
+
+## Systemvoraussetzungen
+
+- Python 3.8+
+- SONOS Lautsprecher im gleichen Netzwerk
+- Mikrofon (für Aufnahme-Funktion)
+- Moderner Browser
