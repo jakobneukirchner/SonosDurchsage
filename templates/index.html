@@ -1,306 +1,767 @@
 <!DOCTYPE html>
-<html lang="de" data-theme="light">
+<html lang="de">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SonosDurchsage</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700&family=Outfit:wght@500;700&display=swap" rel="stylesheet">
+  <title>SONOS Durchsageanlage</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    :root, [data-theme="light"] {
-      --bg: #f7f6f2; --surface: #f9f8f5; --surface2: #fbfbf9;
-      --offset: #f3f0ec; --border: #d4d1ca;
-      --text: #28251d; --muted: #6f6d68;
-      --primary: #01696f; --primary-h: #0c4e54; --primary-hl: #cedcd8;
-      --ok: #437a22; --err: #a12c7b;
-      --sh1: 0 1px 3px rgba(0,0,0,.07); --sh2: 0 8px 24px rgba(0,0,0,.09);
-    }
-    [data-theme="dark"] {
-      --bg: #171614; --surface: #1c1b19; --surface2: #201f1d;
-      --offset: #262320; --border: #393836;
-      --text: #eeece8; --muted: #b6b3ad;
-      --primary: #4f98a3; --primary-h: #227f8b; --primary-hl: #313b3b;
-      --ok: #7fb35d; --err: #d163a7;
-      --sh1: 0 1px 3px rgba(0,0,0,.3); --sh2: 0 10px 28px rgba(0,0,0,.4);
-    }
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Work Sans',sans-serif;background:var(--bg);color:var(--text);line-height:1.55;font-size:1rem}
-    button,input,select{font:inherit;color:inherit}
-    .app{max-width:1400px;margin:0 auto;padding:1.5rem}
-    .topbar{display:flex;justify-content:space-between;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap}
-    .brand{display:flex;align-items:center;gap:.85rem}
-    .logo{width:46px;height:46px;border-radius:13px;background:linear-gradient(135deg,var(--primary),#5aa6ac);display:grid;place-items:center;color:#fff;font-weight:700;font-size:1.25rem;box-shadow:var(--sh2);flex-shrink:0}
-    h1{font-family:'Outfit',sans-serif;font-size:1.75rem;line-height:1.1}
-    .sub{color:var(--muted);font-size:.93rem;margin-top:.15rem}
-    .acts{display:flex;gap:.75rem;flex-wrap:wrap}
-    .btn{border:none;border-radius:.65rem;padding:.7rem 1.1rem;background:var(--offset);color:var(--text);cursor:pointer;box-shadow:var(--sh1);transition:.18s;font-weight:500;font-size:.95rem}
-    .btn:hover{transform:translateY(-1px);box-shadow:var(--sh2)}
-    .btn:active{transform:none}
-    .btn.p{background:var(--primary);color:#fff}
-    .btn.p:hover{background:var(--primary-h)}
-    .btn.d{background:var(--err);color:#fff}
-    .btn.s{padding:.45rem .8rem;font-size:.88rem}
-    .grid{display:grid;grid-template-columns:340px 1fr 340px;gap:1.5rem}
-    .panel{background:var(--surface);border:1px solid var(--border);border-radius:1rem;padding:1.25rem;box-shadow:var(--sh1)}
-    .panel h2{font-family:'Outfit',sans-serif;font-size:1.15rem;margin-bottom:1rem}
-    .splist,.reclist{display:flex;flex-direction:column;gap:.65rem}
-    .spitem,.recitem{display:flex;align-items:center;justify-content:space-between;gap:.75rem;background:var(--surface2);padding:.8rem;border-radius:.65rem;border:1px solid rgba(0,0,0,.05)}
-    .spname{font-weight:600;font-size:.97rem}
-    .spmeta{font-size:.83rem;color:var(--muted)}
-    .badge{padding:.18rem .55rem;border-radius:999px;background:var(--primary-hl);color:var(--primary);font-size:.78rem;font-weight:700;white-space:nowrap}
-    .tbar{display:flex;gap:.65rem;flex-wrap:wrap;margin-bottom:1rem}
-    .field{margin-bottom:1rem}
-    .field label{display:block;font-size:.9rem;font-weight:600;margin-bottom:.35rem}
-    input[type=text],select{width:100%;padding:.7rem .85rem;border:1px solid var(--border);border-radius:.65rem;background:var(--surface2);color:var(--text);outline:none;transition:.15s}
-    input[type=text]:focus,select:focus{border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-hl)}
-    input[type=range]{width:100%;accent-color:var(--primary);margin-top:.3rem}
-    .folder{margin-bottom:.7rem;border:1px dashed var(--border);border-radius:.65rem;padding:.7rem}
-    .flabel{font-weight:700;font-size:.87rem;color:var(--muted);margin-bottom:.5rem}
-    .fchildren{padding-left:.75rem;display:flex;flex-direction:column;gap:.4rem}
-    .fbtn{width:100%;text-align:left;padding:.65rem .8rem;border-radius:.4rem;border:1px solid var(--border);background:var(--surface2);cursor:pointer;font-size:.92rem;transition:.15s}
-    .fbtn:hover{background:var(--offset)}
-    .fbtn.active{background:var(--primary-hl);border-color:var(--primary);color:var(--primary-h);font-weight:700}
-    .status{margin-top:1rem;padding:.85rem 1rem;border-radius:.65rem;background:var(--offset);color:var(--muted);font-size:.93rem}
-    .status.ok{background:rgba(67,122,34,.12);color:var(--ok)}
-    .status.err{background:rgba(161,44,123,.12);color:var(--err)}
-    .note{font-size:.88rem;color:var(--muted);line-height:1.6}
-    .tiny{font-size:.82rem;color:var(--muted)}
-    code{background:var(--offset);padding:.1rem .4rem;border-radius:4px;font-size:.83rem}
-    hr{border:none;border-top:1px solid var(--border);margin:1rem 0}
-    .mt{color:var(--muted);font-size:.92rem}
-    @media(max-width:1100px){.grid{grid-template-columns:1fr}}
+/* =====================================================================
+   SONOS DURCHSAGEANLAGE – HMI / Operator Interface
+   Farbschema: Dunkles Panel, grüne Statusfarben (SCADA-Stil)
+===================================================================== */
+:root {
+  --bg:         #0d1117;
+  --panel:      #161b22;
+  --panel2:     #1c2230;
+  --border:     #30363d;
+  --border2:    #21262d;
+  --text:       #e6edf3;
+  --muted:      #8b949e;
+  --faint:      #484f58;
+  --green:      #3fb950;
+  --green-d:    #238636;
+  --green-hl:   rgba(63,185,80,.12);
+  --amber:      #d29922;
+  --amber-hl:   rgba(210,153,34,.12);
+  --red:        #f85149;
+  --red-hl:     rgba(248,81,73,.12);
+  --blue:       #58a6ff;
+  --blue-hl:    rgba(88,166,255,.12);
+  --mono:       'Roboto Mono', monospace;
+  --sans:       'Roboto', sans-serif;
+  --radius:     4px;
+  --radius-lg:  6px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:var(--sans);
+  background:var(--bg);
+  color:var(--text);
+  font-size:14px;
+  line-height:1.5;
+  overflow-x:hidden;
+}
+/* ── Scrollbar ── */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+/* ── Layout ── */
+.shell{
+  display:grid;
+  grid-template-rows:auto 1fr;
+  min-height:100vh;
+}
+.topbar{
+  background:var(--panel);
+  border-bottom:1px solid var(--border);
+  padding:0 20px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  height:52px;
+  gap:12px;
+  position:sticky;
+  top:0;
+  z-index:100;
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  font-family:var(--mono);
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.brand-icon{
+  width:32px;height:32px;
+  border:2px solid var(--green);
+  border-radius:var(--radius);
+  display:grid;
+  place-items:center;
+  color:var(--green);
+}
+.brand-icon svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2}
+.sysinfo{
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+.sysval{
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--muted);
+  white-space:nowrap;
+}
+.sysval span{color:var(--green);margin-left:4px}
+.sysval.err span{color:var(--red)}
+/* ── Main 3-col ── */
+.main{
+  display:grid;
+  grid-template-columns:300px 1fr 280px;
+  gap:0;
+  overflow:hidden;
+  height:calc(100vh - 52px);
+}
+.col{
+  border-right:1px solid var(--border);
+  overflow-y:auto;
+  padding:16px;
+}
+.col:last-child{border-right:none}
+/* ── Section headers ── */
+.sec-head{
+  font-family:var(--mono);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--muted);
+  border-bottom:1px solid var(--border);
+  padding-bottom:8px;
+  margin-bottom:12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+/* ── Buttons ── */
+btn,button{cursor:pointer;border:none;font-family:var(--sans)}
+.btn{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:7px 14px;
+  border-radius:var(--radius);
+  font-size:13px;
+  font-weight:500;
+  border:1px solid transparent;
+  transition:all .12s;
+  cursor:pointer;
+  white-space:nowrap;
+  background:var(--panel2);
+  color:var(--text);
+  border-color:var(--border);
+}
+.btn:hover{background:var(--panel);border-color:var(--blue);color:var(--blue)}
+.btn:active{opacity:.8}
+.btn-primary{
+  background:var(--green-d);
+  border-color:var(--green);
+  color:#fff;
+}
+.btn-primary:hover{background:var(--green);border-color:var(--green);color:#000}
+.btn-danger{
+  background:var(--red-hl);
+  border-color:var(--red);
+  color:var(--red);
+}
+.btn-danger:hover{background:var(--red);color:#fff}
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn-icon{padding:6px;min-width:32px;justify-content:center}
+.btn-full{width:100%;justify-content:center;padding:10px 14px;font-size:14px}
+.btn-group{display:flex;gap:6px;flex-wrap:wrap}
+/* ── Speaker list ── */
+.sp-item{
+  background:var(--panel2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:10px 12px;
+  margin-bottom:8px;
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  cursor:pointer;
+  transition:border-color .12s, background .12s;
+}
+.sp-item:hover{border-color:var(--blue);background:var(--blue-hl)}
+.sp-item.selected{border-color:var(--green);background:var(--green-hl)}
+.sp-check{
+  width:16px;height:16px;
+  border:2px solid var(--faint);
+  border-radius:3px;
+  margin-top:2px;
+  flex-shrink:0;
+  display:grid;
+  place-items:center;
+  transition:all .12s;
+}
+.sp-item.selected .sp-check{background:var(--green);border-color:var(--green);color:#000}
+.sp-name{font-weight:700;font-size:13px;line-height:1.2;margin-bottom:2px}
+.sp-meta{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.sp-badge{
+  margin-left:auto;
+  font-family:var(--mono);
+  font-size:11px;
+  padding:2px 7px;
+  border-radius:3px;
+  background:var(--panel);
+  border:1px solid var(--border);
+  color:var(--muted);
+  white-space:nowrap;
+  flex-shrink:0;
+}
+/* ── Volume ── */
+.vol-row{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.vol-label{font-family:var(--mono);font-size:11px;color:var(--muted);width:80px;flex-shrink:0}
+.vol-num{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--green);width:36px;text-align:right;flex-shrink:0}
+input[type=range]{
+  flex:1;
+  accent-color:var(--green);
+  height:4px;
+}
+/* ── Gong select ── */
+select{
+  width:100%;
+  padding:7px 10px;
+  background:var(--panel2);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  color:var(--text);
+  font-size:13px;
+  font-family:var(--mono);
+  outline:none;
+  cursor:pointer;
+}
+select:focus{border-color:var(--blue)}
+/* ── Folder tree ── */
+.tree{margin-bottom:4px}
+.tree-folder{
+  margin-bottom:4px;
+}
+.tree-folder-head{
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:700;
+  color:var(--muted);
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  padding:4px 6px;
+  margin-bottom:2px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+  cursor:pointer;
+}
+.tree-folder-head:hover{color:var(--text)}
+.tree-files{padding-left:12px;display:flex;flex-direction:column;gap:2px}
+.tree-file{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 8px;
+  border-radius:var(--radius);
+  cursor:pointer;
+  font-size:13px;
+  border:1px solid transparent;
+  transition:all .1s;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.tree-file:hover{background:var(--panel2);border-color:var(--border)}
+.tree-file.active{background:var(--green-hl);border-color:var(--green);color:var(--green);font-weight:700}
+.tree-file svg{width:13px;height:13px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:2}
+.tree-file.active svg{stroke:var(--green)}
+/* ── Recordings ── */
+.rec-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:8px 10px;
+  background:var(--panel2);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  margin-bottom:4px;
+}
+.rec-item.active{border-color:var(--green);background:var(--green-hl)}
+.rec-name{font-family:var(--mono);font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
+.rec-meta{font-size:11px;color:var(--muted)}
+/* ── Status bar ── */
+.statusbar{
+  margin-top:12px;
+  padding:10px 12px;
+  border-radius:var(--radius);
+  font-family:var(--mono);
+  font-size:12px;
+  background:var(--panel2);
+  border:1px solid var(--border);
+  border-left:3px solid var(--faint);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-height:40px;
+}
+.statusbar.ok{border-left-color:var(--green);color:var(--green);background:var(--green-hl)}
+.statusbar.err{border-left-color:var(--red);color:var(--red);background:var(--red-hl)}
+.statusbar.warn{border-left-color:var(--amber);color:var(--amber);background:var(--amber-hl)}
+.statusbar.info{border-left-color:var(--blue);color:var(--blue);background:var(--blue-hl)}
+/* ── Indicator dot ── */
+.dot{
+  width:8px;height:8px;
+  border-radius:50%;
+  background:var(--faint);
+  flex-shrink:0;
+}
+.dot.green{background:var(--green);box-shadow:0 0 6px var(--green)}
+.dot.red{background:var(--red)}
+.dot.amber{background:var(--amber)}
+.dot.blink{animation:blink 1s step-end infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.1}}
+/* ── Record panel ── */
+.rec-ctrl{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  padding:16px;
+  background:var(--panel2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  margin-bottom:12px;
+}
+.rec-btn-big{
+  width:56px;height:56px;
+  border-radius:50%;
+  border:2px solid var(--red);
+  background:var(--red-hl);
+  color:var(--red);
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  transition:all .15s;
+  font-size:22px;
+}
+.rec-btn-big:hover{background:var(--red);color:#fff}
+.rec-btn-big.recording{background:var(--red);color:#fff;box-shadow:0 0 16px var(--red);animation:rec-pulse 1.2s ease-in-out infinite}
+@keyframes rec-pulse{0%,100%{box-shadow:0 0 8px var(--red)}50%{box-shadow:0 0 22px var(--red)}}
+.rec-status{font-family:var(--mono);font-size:11px;text-align:center;color:var(--muted)}
+.rec-status.active{color:var(--red)}
+/* ── Field ── */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:5px}
+input[type=text]{
+  width:100%;
+  padding:7px 10px;
+  background:var(--panel2);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  color:var(--text);
+  font-size:13px;
+  font-family:var(--mono);
+  outline:none;
+}
+input[type=text]:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(88,166,255,.15)}
+/* ── Divider ── */
+.div{border:none;border-top:1px solid var(--border);margin:14px 0}
+/* ── Note ── */
+.note{font-size:12px;color:var(--muted);line-height:1.6;padding:8px 10px;background:var(--panel2);border-left:3px solid var(--border);border-radius:0 var(--radius) var(--radius) 0}
+.note strong{color:var(--text)}
+/* ── Play bar ── */
+.playbar{
+  background:var(--panel);
+  border-top:1px solid var(--border);
+  padding:12px 20px;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  position:sticky;
+  bottom:0;
+}
+/* ── empty ── */
+.empty{padding:20px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--faint)}
+/* ── responsive ── */
+@media(max-width:1024px){
+  .main{grid-template-columns:1fr;height:auto}
+  .col{border-right:none;border-bottom:1px solid var(--border);height:auto;overflow:visible}
+}
   </style>
 </head>
 <body>
-<div class="app">
-  <header class="topbar">
-    <div class="brand">
-      <div class="logo">S</div>
-      <div>
-        <h1>SonosDurchsage</h1>
-        <div class="sub">Lokales Durchsagesystem fuer SONOS im Netzwerk</div>
+<div class="shell">
+
+<!-- ═══════════════════════════ TOPBAR ════════════════════════════ -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+    </div>
+    SONOS DURCHSAGEANLAGE
+  </div>
+  <div class="sysinfo" id="sysinfo">
+    <div class="sysval" id="si-ip">IP<span>—</span></div>
+    <div class="sysval" id="si-soco">SOCO<span>—</span></div>
+    <div class="sysval" id="si-audio">AUDIO<span>—</span></div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════ MAIN ════════════════════════════ -->
+<div class="main">
+
+  <!-- ─────── COL 1: LAUTSPRECHER ─────── -->
+  <div class="col">
+    <div class="sec-head">
+      LAUTSPRECHER
+      <div class="btn-group">
+        <button class="btn btn-sm" id="btnDiscover" onclick="discoverSpeakers()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          Suchen
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="stopAll()">&#9209; Stop</button>
       </div>
     </div>
-    <div class="acts">
-      <button class="btn" data-theme-toggle title="Design wechseln">&#127769;</button>
-      <button class="btn p" onclick="discoverSpeakers()">&#128269; Lautsprecher suchen</button>
-      <button class="btn d" onclick="stopPlayback()">&#9209; Alle stoppen</button>
+    <div id="spList"><div class="empty">Lautsprecher suchen…</div></div>
+
+    <hr class="div">
+
+    <div class="sec-head">LAUTSTAERKE</div>
+    <div class="vol-row">
+      <span class="vol-label">Durchsage</span>
+      <input type="range" min="1" max="100" value="25" id="volRange"
+             oninput="document.getElementById('volNum').textContent=this.value+'%'">
+      <span class="vol-num" id="volNum">25%</span>
     </div>
-  </header>
 
-  <main class="grid">
-    <section class="panel">
-      <h2>&#128266; SONOS Lautsprecher</h2>
-      <div class="splist" id="spList"><div class="mt">Klicke &bdquo;Lautsprecher suchen&ldquo; &hellip;</div></div>
-    </section>
+    <hr class="div">
 
-    <section class="panel">
-      <h2>&#128226; Durchsagen</h2>
-      <div class="tbar">
-        <button class="btn s" onclick="loadQuick()">&#8635; Schnelldurchsagen</button>
-        <button class="btn s" onclick="loadRecs()">&#8635; Aufnahmen</button>
-      </div>
-      <div class="field">
-        <label for="gongSel">&#128276; Gong vor Durchsage</label>
-        <select id="gongSel"><option value="">Kein Gong</option></select>
-      </div>
-      <div class="field">
-        <label>&#128265; Lautstaerke: <span id="volVal">25</span>%</label>
-        <input type="range" min="1" max="100" value="25" id="volRange" oninput="volVal.textContent=this.value">
-      </div>
-      <div class="field">
-        <label>&#128193; Schnelldurchsagen</label>
-        <div id="quickTree"><div class="mt">Lade &hellip;</div></div>
-      </div>
-      <div class="field">
-        <label>&#127908; Aufnahmen</label>
-        <div class="reclist" id="recList"><div class="mt">Keine Aufnahmen vorhanden.</div></div>
-      </div>
-      <button class="btn p" style="width:100%" onclick="playSelected()">&#9654; Ausgewaehlte Datei abspielen</button>
-      <div id="status" class="status">Bereit.</div>
-    </section>
+    <div class="sec-head">GONG</div>
+    <div class="field">
+      <select id="gongSel"><option value="">— Kein Gong —</option></select>
+    </div>
+  </div>
 
-    <section class="panel">
-      <h2>&#127908; Aufnahme</h2>
-      <div class="tbar">
-        <button class="btn p" onclick="startRec()">&#9210; Starten</button>
-        <button class="btn" onclick="stopRec()">&#9209; Stoppen &amp; speichern</button>
+  <!-- ─────── COL 2: SCHNELLDURCHSAGEN ─────── -->
+  <div class="col">
+    <div class="sec-head">
+      SCHNELLDURCHSAGEN
+      <button class="btn btn-sm" onclick="loadQuick()">&#8635; Laden</button>
+    </div>
+    <div id="quickTree"><div class="empty">Lade…</div></div>
+
+    <hr class="div">
+    <div class="sec-head">
+      AUFNAHMEN
+      <button class="btn btn-sm" onclick="loadRecs()">&#8635; Laden</button>
+    </div>
+    <div id="recList"><div class="empty">Keine Aufnahmen.</div></div>
+
+    <hr class="div">
+    <div id="statusbar" class="statusbar"><span class="dot"></span>BEREIT</div>
+    <div style="height:8px"></div>
+    <button class="btn btn-primary btn-full" onclick="playSelected()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+      DURCHSAGE STARTEN
+    </button>
+  </div>
+
+  <!-- ─────── COL 3: AUFNAHME + EINSTELLUNGEN ─────── -->
+  <div class="col">
+    <div class="sec-head">MIKROFONAUFNAHME</div>
+    <div class="rec-ctrl">
+      <div style="text-align:center">
+        <button class="rec-btn-big" id="recBtn" onclick="toggleRec()" title="Aufnahme starten/stoppen">&#9210;</button>
+        <div class="rec-status" id="recStatus">BEREIT</div>
       </div>
-      <p class="note">Aufnahmen werden als WAV gespeichert und erscheinen direkt im Aufnahmen-Panel &ndash; danach sofort auf SONOS abspielbar.</p>
-      <hr>
-      <div class="note" style="margin-bottom:.75rem"><strong>Livewiedergabe:</strong> SONOS unterstuetzt keine direkte Mikrofon-Einspeisung. Loesung: aufnehmen &rarr; Aufnahme sofort abspielen.</div>
-      <hr>
-      <div class="field">
-        <label for="newFolder">&#128194; Neuen Ordner anlegen</label>
-        <input type="text" id="newFolder" placeholder="z. B. Schule">
-      </div>
-      <button class="btn" onclick="createFolder()">Ordner erstellen</button>
-      <hr>
-      <div class="tiny">Gong-Dateien &rarr; <code>assets/gongs/</code><br>Durchsagen &rarr; <code>schnelldurchsagen/Ordner/</code></div>
-    </section>
-  </main>
-</div>
+    </div>
+    <div class="note">
+      <strong>Aufnahme &amp; Direktwiedergabe:</strong><br>
+      Aufnehmen → automatisch auf SONOS abspielen.
+      SONOS unterstützt keine direkte Live-Einspeisung.
+    </div>
+
+    <hr class="div">
+    <div class="sec-head">ORDNER ERSTELLEN</div>
+    <div class="field">
+      <label>Ordnername</label>
+      <input type="text" id="newFolder" placeholder="z. B. Schule">
+    </div>
+    <button class="btn btn-full" onclick="createFolder()">Ordner erstellen</button>
+
+    <hr class="div">
+    <div class="sec-head">SYSTEMINFORMATION</div>
+    <div class="note" id="sysNote" style="font-family:var(--mono);font-size:11px;line-height:1.9">
+      Lade…
+    </div>
+  </div>
+
+</div><!-- /.main -->
+</div><!-- /.shell -->
 
 <script>
-  let selPath = '', selSpeakers = new Set();
-  const statusEl = document.getElementById('status');
+'use strict';
 
-  function setStatus(msg, type='') {
-    statusEl.textContent = msg;
-    statusEl.className = 'status' + (type ? ' '+type : '');
-  }
+let selPath = '';
+let selSpeakers = new Set();
+let isRecording = false;
 
-  async function api(url, opts={}) {
-    const r = await fetch(url, {headers:{'Content-Type':'application/json'}, ...opts});
-    return r.json();
-  }
-
-  function renderSpeakers(list) {
-    const el = document.getElementById('spList');
-    if (!list.length) { el.innerHTML='<div class="mt">Keine SONOS-Geraete gefunden.</div>'; return; }
-    el.innerHTML = list.map(s => `
-      <div class="spitem">
-        <div style="display:flex;gap:.65rem;align-items:flex-start;flex:1">
-          <input type="checkbox" style="width:17px;height:17px;margin-top:3px;accent-color:var(--primary)"
-            onchange="toggleSp('${s.ip}',this.checked)">
-          <div><div class="spname">${s.name}</div><div class="spmeta">${s.ip} &middot; ${s.group}</div></div>
-        </div>
-        <span class="badge">${s.volume}%</span>
-      </div>`).join('');
-  }
-
-  function toggleSp(ip, checked) {
-    if (checked) selSpeakers.add(ip); else selSpeakers.delete(ip);
-  }
-
-  async function discoverSpeakers() {
-    setStatus('Suche Lautsprecher im Netzwerk ...');
-    const d = await api('/api/speakers/discover');
-    renderSpeakers(d.speakers||[]);
-    if (!d.soco_available) setStatus('soco fehlt -> pip install soco', 'err');
-    else setStatus(`${(d.speakers||[]).length} Lautsprecher gefunden.`, 'ok');
-  }
-
-  async function loadGongs() {
-    const d = await api('/api/gongs');
-    const sel = document.getElementById('gongSel');
-    sel.innerHTML = '<option value="">Kein Gong</option>' +
-      (d.gongs||[]).map(g=>`<option value="${g.path}">${g.name}</option>`).join('');
-  }
-
-  function makeFileBtn(file) {
-    const btn = document.createElement('button');
-    btn.className = 'fbtn';
-    btn.textContent = '&#9835; ' + file.name;
-    btn.onclick = () => {
-      selPath = file.path;
-      document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));
-      document.querySelectorAll('.recitem .btn').forEach(b=>b.classList.remove('p'));
-      btn.classList.add('active');
-      setStatus('Ausgewaehlt: ' + file.name, 'ok');
-    };
-    return btn;
-  }
-
-  function renderFolder(node, container, isRoot=false) {
-    if (!isRoot) {
-      const wrap = document.createElement('div');
-      wrap.className = 'folder';
-      wrap.innerHTML = `<div class="flabel">&#128193; ${node.name}</div>`;
-      const ch = document.createElement('div'); ch.className='fchildren';
-      (node.files||[]).forEach(f=>ch.appendChild(makeFileBtn(f)));
-      (node.folders||[]).forEach(f=>renderFolder(f,ch));
-      wrap.appendChild(ch); container.appendChild(wrap);
-    } else {
-      (node.files||[]).forEach(f=>container.appendChild(makeFileBtn(f)));
-      (node.folders||[]).forEach(f=>renderFolder(f,container));
-    }
-  }
-
-  async function loadQuick() {
-    const d = await api('/api/schnelldurchsagen');
-    const c = document.getElementById('quickTree'); c.innerHTML='';
-    if (!(d.files||[]).length && !(d.folders||[]).length) {
-      c.innerHTML='<div class="mt">Noch keine Dateien in schnelldurchsagen/</div>'; return;
-    }
-    renderFolder(d, c, true);
-  }
-
-  async function loadRecs() {
-    const d = await api('/api/recordings');
-    const el = document.getElementById('recList');
-    const recs = d.recordings||[];
-    if (!recs.length) { el.innerHTML='<div class="mt">Noch keine Aufnahmen.</div>'; return; }
-    el.innerHTML = recs.map(r=>`
-      <div class="recitem">
-        <div><div class="spname">${r.name}</div><div class="spmeta">${Math.round(r.size/1024)} KB</div></div>
-        <button class="btn s" onclick="selRec('${r.path}',this)">Waehlen</button>
-      </div>`).join('');
-  }
-
-  function selRec(path, btn) {
-    selPath = path;
-    document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));
-    document.querySelectorAll('.recitem .btn').forEach(b=>b.classList.remove('p'));
-    btn.classList.add('p');
-    setStatus('Aufnahme gewaehlt: '+path.split('/').pop(), 'ok');
-  }
-
-  async function startRec() {
-    const d = await api('/api/record/start',{method:'POST',body:'{}'});
-    if (d.success) setStatus('Aufnahme laeuft ...', 'ok');
-    else setStatus(d.error||'Fehler beim Starten.', 'err');
-  }
-
-  async function stopRec() {
-    const d = await api('/api/record/stop',{method:'POST',body:'{}'});
-    if (d.success) { setStatus('Gespeichert: '+d.filename,'ok'); await loadRecs(); }
-    else setStatus(d.error||'Fehler beim Stoppen.','err');
-  }
-
-  async function playSelected() {
-    if (!selPath) { setStatus('Bitte zuerst eine Datei auswaehlen.','err'); return; }
-    if (!selSpeakers.size) { setStatus('Bitte mindestens einen Lautsprecher auswaehlen.','err'); return; }
-    setStatus('Durchsage wird gestartet ...');
-    const d = await api('/api/play',{
-      method:'POST',
-      body: JSON.stringify({
-        audio_path: selPath,
-        gong_path: document.getElementById('gongSel').value,
-        speakers: Array.from(selSpeakers),
-        volume: parseInt(document.getElementById('volRange').value,10)
-      })
+// ── Utility ────────────────────────────────────────────────────────
+async function api(url, opts = {}) {
+  try {
+    const r = await fetch(url, {
+      headers: { 'Content-Type': 'application/json' },
+      ...opts
     });
-    if (d.success) setStatus('Durchsage gestartet.','ok');
-    else setStatus(d.error||'Fehler bei der Wiedergabe.','err');
+    return await r.json();
+  } catch (e) {
+    return { success: false, error: e.message };
   }
+}
 
-  async function stopPlayback() {
-    const d = await api('/api/stop',{method:'POST',body:JSON.stringify({speakers:Array.from(selSpeakers)})});
-    if (d.success) setStatus('Wiedergabe gestoppt.','ok');
-    else setStatus(d.error||'Stoppen fehlgeschlagen.','err');
+function setStatus(msg, type = '') {
+  const el = document.getElementById('statusbar');
+  const types = ['ok','err','warn','info'];
+  types.forEach(t => el.classList.remove(t));
+  if (type) el.classList.add(type);
+  const colors = { ok:'green', err:'red', warn:'amber', info:'blue', '':'' };
+  el.innerHTML = `<span class="dot ${colors[type]||''}"></span>${msg}`;
+}
+
+function iconSVG(d) {
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${d}</svg>`;
+}
+
+// ── System Status ──────────────────────────────────────────────────
+async function loadStatus() {
+  const d = await api('/api/status');
+  const si = id => document.getElementById(id);
+  si('si-ip').innerHTML  = `IP <span>${d.ip || '—'}:${d.port||5000}</span>`;
+  si('si-soco').innerHTML  = `SOCO <span style="color:${d.soco?'var(--green)':'var(--red)'}">${d.soco?'OK':'FEHLT'}</span>`;
+  si('si-audio').innerHTML = `AUDIO <span style="color:${d.audio?'var(--green)':'var(--amber)'}">${d.audio?'OK':'FEHLT'}</span>`;
+  document.getElementById('sysNote').innerHTML =
+    `SERVER&nbsp;&nbsp;: ${d.ip}:${d.port||5000}\nSONOS&nbsp;&nbsp;&nbsp;: ${d.soco?'soco installiert':'pip install soco'}\nAUDIO&nbsp;&nbsp;&nbsp;: ${d.audio?'sounddevice OK':'pip install sounddevice soundfile numpy'}\nMEDIA&nbsp;&nbsp;&nbsp;: http://${d.ip}:${d.port||5000}/media/…`
+    .split('\n').join('<br>');
+  return d;
+}
+
+// ── Speakers ────────────────────────────────────────────────────────
+function renderSpeakers(list) {
+  const el = document.getElementById('spList');
+  if (!list || !list.length) {
+    el.innerHTML = '<div class="empty">Keine SONOS-Geräte gefunden.</div>';
+    return;
   }
-
-  async function createFolder() {
-    const name = document.getElementById('newFolder').value.trim();
-    if (!name) { setStatus('Bitte einen Ordnernamen eingeben.','err'); return; }
-    const d = await api('/api/folder/create',{method:'POST',body:JSON.stringify({name})});
-    if (d.success) { document.getElementById('newFolder').value=''; setStatus('Ordner erstellt.','ok'); await loadQuick(); }
-    else setStatus(d.error||'Fehler.','err');
-  }
-
-  document.querySelector('[data-theme-toggle]').addEventListener('click', () => {
-    const root = document.documentElement;
-    const dark = root.getAttribute('data-theme')==='dark';
-    root.setAttribute('data-theme', dark?'light':'dark');
-    document.querySelector('[data-theme-toggle]').textContent = dark ? '&#127769;' : '&#9728;&#65039;';
+  el.innerHTML = '';
+  list.forEach(s => {
+    const div = document.createElement('div');
+    div.className = 'sp-item' + (selSpeakers.has(s.ip) ? ' selected' : '');
+    div.dataset.ip = s.ip;
+    div.innerHTML = `
+      <div class="sp-check">${selSpeakers.has(s.ip) ? checkSVG() : ''}</div>
+      <div style="flex:1;min-width:0">
+        <div class="sp-name">${s.name}</div>
+        <div class="sp-meta">${s.ip} &nbsp;·&nbsp; ${s.group}</div>
+      </div>
+      <div class="sp-badge">${s.volume}%</div>`;
+    div.addEventListener('click', () => toggleSpeaker(s.ip, div));
+    el.appendChild(div);
   });
+}
 
-  loadGongs();
-  loadQuick();
-  loadRecs();
+function checkSVG() {
+  return `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`;
+}
+
+function toggleSpeaker(ip, el) {
+  if (selSpeakers.has(ip)) {
+    selSpeakers.delete(ip);
+    el.classList.remove('selected');
+    el.querySelector('.sp-check').innerHTML = '';
+  } else {
+    selSpeakers.add(ip);
+    el.classList.add('selected');
+    el.querySelector('.sp-check').innerHTML = checkSVG();
+  }
+}
+
+async function discoverSpeakers() {
+  const btn = document.getElementById('btnDiscover');
+  btn.textContent = '…';
+  setStatus('Suche SONOS-Geräte im Netzwerk…', 'info');
+  const d = await api('/api/speakers/discover', { method: 'POST', body: '{}' });
+  renderSpeakers(d.speakers || []);
+  if ((d.speakers || []).length) {
+    setStatus(`${d.speakers.length} Lautsprecher gefunden`, 'ok');
+  } else {
+    setStatus('Keine SONOS-Geräte gefunden', 'warn');
+  }
+  btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> Suchen';
+}
+
+// ── Gongs ────────────────────────────────────────────────────────────
+async function loadGongs() {
+  const d = await api('/api/gongs');
+  const sel = document.getElementById('gongSel');
+  sel.innerHTML = '<option value="">— Kein Gong —</option>';
+  (d.gongs || []).forEach(g => {
+    const o = document.createElement('option');
+    o.value = g.path; o.textContent = g.name;
+    sel.appendChild(o);
+  });
+}
+
+// ── Folder tree ───────────────────────────────────────────────────────
+function makeFileNode(file) {
+  const el = document.createElement('div');
+  el.className = 'tree-file' + (selPath === file.path ? ' active' : '');
+  el.innerHTML = `<svg viewBox="0 0 24 24"><polygon points="11,3 22,12 11,21" fill="currentColor" stroke="none"/></svg>${file.name}`;
+  el.title = file.path;
+  el.addEventListener('click', () => {
+    selPath = file.path;
+    document.querySelectorAll('.tree-file, .rec-item').forEach(e => e.classList.remove('active'));
+    el.classList.add('active');
+    setStatus('BEREIT: ' + file.name, 'info');
+  });
+  return el;
+}
+
+function makeFolder(node) {
+  const wrap = document.createElement('div');
+  wrap.className = 'tree-folder';
+  if (node.name) {
+    const head = document.createElement('div');
+    head.className = 'tree-folder-head';
+    head.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>${node.name}`;
+    wrap.appendChild(head);
+  }
+  const files = document.createElement('div');
+  files.className = 'tree-files';
+  (node.files || []).forEach(f => files.appendChild(makeFileNode(f)));
+  (node.folders || []).forEach(f => files.appendChild(makeFolder(f)));
+  wrap.appendChild(files);
+  return wrap;
+}
+
+async function loadQuick() {
+  const d = await api('/api/schnelldurchsagen');
+  const c = document.getElementById('quickTree');
+  c.innerHTML = '';
+  const hasFiles = (n) => (n.files||[]).length > 0 || (n.folders||[]).some(hasFiles);
+  if (!hasFiles(d)) {
+    c.innerHTML = '<div class="empty">Keine Audiodateien in schnelldurchsagen/</div>';
+    return;
+  }
+  // Root-Ebene direkt, Unterordner mit Header
+  (d.files || []).forEach(f => c.appendChild(makeFileNode(f)));
+  (d.folders || []).forEach(f => c.appendChild(makeFolder(f)));
+}
+
+// ── Recordings ────────────────────────────────────────────────────────
+async function loadRecs() {
+  const d = await api('/api/recordings');
+  const el = document.getElementById('recList');
+  const recs = d.recordings || [];
+  if (!recs.length) { el.innerHTML = '<div class="empty">Keine Aufnahmen.</div>'; return; }
+  el.innerHTML = '';
+  recs.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'rec-item' + (selPath === r.path ? ' active' : '');
+    div.innerHTML = `
+      <div><div class="rec-name">${r.name}</div><div class="rec-meta">${(r.size/1024).toFixed(0)} KB</div></div>
+      <button class="btn btn-sm" onclick="selRec('${r.path}',this)">Wählen</button>`;
+    el.appendChild(div);
+  });
+}
+
+function selRec(path, btn) {
+  selPath = path;
+  document.querySelectorAll('.tree-file, .rec-item').forEach(e => e.classList.remove('active'));
+  btn.closest('.rec-item').classList.add('active');
+  setStatus('BEREIT: ' + path.split('/').pop(), 'info');
+}
+
+// ── Recording ─────────────────────────────────────────────────────────
+async function toggleRec() {
+  const btn = document.getElementById('recBtn');
+  const lbl = document.getElementById('recStatus');
+  if (!isRecording) {
+    const d = await api('/api/record/start', { method: 'POST', body: '{}' });
+    if (d.success) {
+      isRecording = true;
+      btn.classList.add('recording');
+      btn.innerHTML = '&#9209;';
+      lbl.textContent = 'REC ●';
+      lbl.classList.add('active');
+      setStatus('Aufnahme läuft…', 'warn');
+    } else {
+      setStatus('Aufnahmefehler: ' + (d.error || 'unbekannt'), 'err');
+    }
+  } else {
+    const d = await api('/api/record/stop', { method: 'POST', body: '{}' });
+    isRecording = false;
+    btn.classList.remove('recording');
+    btn.innerHTML = '&#9210;';
+    lbl.textContent = 'BEREIT';
+    lbl.classList.remove('active');
+    if (d.success) {
+      setStatus('Gespeichert: ' + d.filename, 'ok');
+      await loadRecs();
+      // Direkt abspielen falls Lautsprecher ausgewählt
+      if (selSpeakers.size && d.path) {
+        selPath = d.path;
+        await playSelected();
+      }
+    } else {
+      setStatus('Speicherfehler: ' + (d.error || ''), 'err');
+    }
+  }
+}
+
+// ── Play ──────────────────────────────────────────────────────────────
+async function playSelected() {
+  if (!selPath) { setStatus('Keine Datei ausgewählt', 'err'); return; }
+  if (!selSpeakers.size) { setStatus('Keinen Lautsprecher ausgewählt', 'err'); return; }
+  setStatus('Sende Durchsage…', 'info');
+  const d = await api('/api/play', {
+    method: 'POST',
+    body: JSON.stringify({
+      audio_path: selPath,
+      gong_path:  document.getElementById('gongSel').value,
+      speakers:   Array.from(selSpeakers),
+      volume:     parseInt(document.getElementById('volRange').value, 10)
+    })
+  });
+  if (d.success) {
+    setStatus('DURCHSAGE AKTIV  →  ' + selPath.split('/').pop(), 'ok');
+  } else {
+    setStatus('FEHLER: ' + (d.error || 'Unbekannter Fehler'), 'err');
+  }
+}
+
+async function stopAll() {
+  const d = await api('/api/stop', {
+    method: 'POST',
+    body: JSON.stringify({ speakers: Array.from(selSpeakers) })
+  });
+  setStatus(d.success ? 'Wiedergabe gestoppt' : ('Stop-Fehler: ' + (d.errors||[]).join(', ')),
+            d.success ? 'ok' : 'err');
+}
+
+// ── Folder create ─────────────────────────────────────────────────────
+async function createFolder() {
+  const name = document.getElementById('newFolder').value.trim();
+  if (!name) { setStatus('Bitte Ordnername eingeben', 'err'); return; }
+  const d = await api('/api/folder/create', { method: 'POST', body: JSON.stringify({ name }) });
+  if (d.success) {
+    document.getElementById('newFolder').value = '';
+    setStatus('Ordner erstellt: ' + name, 'ok');
+    await loadQuick();
+  } else {
+    setStatus('Fehler: ' + (d.error || ''), 'err');
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────────────
+(async () => {
+  await loadStatus();
+  await loadGongs();
+  await loadQuick();
+  await loadRecs();
   discoverSpeakers();
+})();
 </script>
 </body>
 </html>
