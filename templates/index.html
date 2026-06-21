@@ -2,551 +2,690 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Durchsageanlage</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-/* ====================================================================
-   LOK-HMI STYLE  (Bombardier / Siemens Fahrzeugfuehrer-Display)
-   Dunkelblauer Hintergrund, hellblaue Schaltflaechen, weisse Schrift
-==================================================================== */
+/* ===== RESET ===== */
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{
-  height:100%;
-  background:#000;
-  font-family:'Noto Sans',Arial,sans-serif;
-  font-size:16px;
-  color:#fff;
-  overflow:hidden;
-  user-select:none;
+html,body{height:100%;overflow:hidden;user-select:none}
+
+/* ===== VARIABLEN (Lok-HMI) ===== */
+:root{
+  --bg:         #07142a;
+  --bg2:        #0d1e3a;
+  --panel-bg:   #0a1a33;
+  --border:     #1a3060;
+  --btn-top:    #5b8ee8;
+  --btn-mid:    #2d60b8;
+  --btn-bot:    #1a3c80;
+  --btn-border: #7aaaff;
+  --btn-txt:    #ffffff;
+  --green-top:  #6ac93a;
+  --green-mid:  #3e8c18;
+  --green-bot:  #255c0c;
+  --red-top:    #e05a5a;
+  --red-mid:    #b02020;
+  --red-bot:    #7a1414;
+  --amber:      #d4a020;
+  --muted:      #7a9ab8;
+  --text:       #e8f0fc;
+  --title-h:    42px;
+  --status-h:   32px;
+  --font:       'Noto Sans',Arial,sans-serif;
 }
-/* ---------- Gesamtrahmen (simuliert Displayrahmen) ---------- */
+
+/* ===== LAYOUT ===== */
 .frame{
-  width:100vw;height:100vh;
   display:grid;
-  grid-template-rows:auto 1fr auto;
-  background: #0a1628;
+  grid-template-rows:var(--title-h) 1fr var(--status-h);
+  width:100vw;height:100vh;
+  background:var(--bg);
+  font-family:var(--font);
+  color:var(--text);
 }
-/* ---------- Titelleiste ---------- */
+
+/* ===== TITELLEISTE ===== */
 .titlebar{
-  background: #0a1628;
-  border-bottom:2px solid #2a5298;
-  padding:6px 20px;
-  display:flex;
+  background:var(--bg2);
+  border-bottom:2px solid var(--border);
+  display:grid;
+  grid-template-columns:1fr auto 1fr;
   align-items:center;
-  justify-content:space-between;
+  padding:0 16px;
   gap:8px;
-  min-height:44px;
 }
-.titlebar-left{font-size:14px;color:#cde;font-weight:400;white-space:nowrap}
-.titlebar-center{
-  font-size:20px;
+.tl-left{font-size:13px;color:var(--muted)}
+.tl-center{
+  font-size:17px;
   font-weight:700;
-  letter-spacing:.04em;
+  letter-spacing:.1em;
   text-align:center;
-  flex:1;
-}
-.titlebar-right{
-  font-size:14px;
-  color:#cde;
-  font-family:'Noto Sans',monospace;
   white-space:nowrap;
-  text-align:right;
 }
-/* ---------- Hauptbereich ---------- */
+.tl-right{font-size:13px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
+
+/* ===== HAUPT-GRID ===== */
 .main{
   display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:0;
+  grid-template-columns:260px 1fr;
   overflow:hidden;
 }
-.panel{
-  padding:12px 16px;
-  border-right:1px solid #1e3a6a;
+
+/* ===== SIDEBAR ===== */
+.sidebar{
+  background:var(--panel-bg);
+  border-right:2px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+}
+.sb-tabs{
+  display:flex;
+  border-bottom:1px solid var(--border);
+}
+.sbtab{
+  flex:1;
+  padding:8px 4px;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  text-align:center;
+  background:transparent;
+  border:none;
+  color:var(--muted);
+  cursor:pointer;
+  border-bottom:2px solid transparent;
+  transition:color .1s, border-color .1s;
+}
+.sbtab.active{color:var(--text);border-bottom-color:var(--btn-top)}
+.sb-body{
+  flex:1;
   overflow-y:auto;
+  padding:12px;
   display:flex;
   flex-direction:column;
   gap:10px;
 }
-.panel:last-child{border-right:none}
-/* ---------- Panel-Ueberschrift ---------- */
-.p-head{
-  font-size:13px;
+.sb-body::-webkit-scrollbar{width:4px}
+.sb-body::-webkit-scrollbar-track{background:var(--bg)}
+.sb-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* ===== SEKTIONSÜBERSCHRIFT ===== */
+.sect-head{
+  font-size:11px;
   font-weight:700;
-  letter-spacing:.08em;
+  letter-spacing:.1em;
   text-transform:uppercase;
-  color:#8ab;
-  border-bottom:1px solid #1e3a6a;
-  padding-bottom:6px;
+  color:var(--muted);
+  border-bottom:1px solid var(--border);
+  padding-bottom:4px;
   margin-bottom:2px;
 }
-/* ---------- HMI-Schaltflaeche (Lok-Stil) ---------- */
+
+/* ===== LOK-SCHALTFLÄCHEN ===== */
 .hbtn{
   display:inline-flex;
   align-items:center;
   justify-content:center;
   gap:6px;
-  background: linear-gradient(180deg, #4a7fd4 0%, #2a5298 60%, #1e3f7a 100%);
-  border: 1px solid #6fa0e8;
-  border-bottom-color: #1a3060;
-  border-radius:6px;
-  color:#fff;
-  font-family:inherit;
-  font-size:14px;
+  background:linear-gradient(180deg,var(--btn-top) 0%,var(--btn-mid) 55%,var(--btn-bot) 100%);
+  border:1px solid var(--btn-border);
+  border-bottom-color:var(--btn-bot);
+  border-radius:5px;
+  color:var(--btn-txt);
+  font-family:var(--font);
+  font-size:13px;
   font-weight:700;
-  padding:9px 18px;
+  padding:8px 14px;
   cursor:pointer;
-  text-align:center;
-  transition:filter .08s;
   white-space:nowrap;
-  box-shadow: 0 2px 4px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.15);
+  box-shadow:0 2px 5px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.18);
+  transition:filter .08s,transform .06s;
+  line-height:1;
 }
-.hbtn:hover{filter:brightness(1.15)}
-.hbtn:active{
-  filter:brightness(.85);
-  transform:translateY(1px);
-  box-shadow:0 1px 2px rgba(0,0,0,.5), inset 0 1px 0 rgba(0,0,0,.1);
+.hbtn:hover{filter:brightness(1.18)}
+.hbtn:active{filter:brightness(.8);transform:translateY(1px);
+  box-shadow:0 1px 2px rgba(0,0,0,.5),inset 0 1px 0 rgba(0,0,0,.1)}
+.hbtn.green{
+  background:linear-gradient(180deg,var(--green-top) 0%,var(--green-mid) 55%,var(--green-bot) 100%);
+  border-color:#90d060;border-bottom-color:var(--green-bot);
+  box-shadow:0 0 8px rgba(80,200,40,.3),0 2px 4px rgba(0,0,0,.5);
 }
-.hbtn.active{
-  background:linear-gradient(180deg,#70b040 0%,#4a8020 60%,#306010 100%);
-  border-color:#90d060;
-  border-bottom-color:#204010;
-  box-shadow:0 0 8px rgba(100,200,50,.4), 0 2px 4px rgba(0,0,0,.5);
+.hbtn.red{
+  background:linear-gradient(180deg,var(--red-top) 0%,var(--red-mid) 55%,var(--red-bot) 100%);
+  border-color:#f08080;border-bottom-color:var(--red-bot);
 }
-.hbtn.danger{
-  background:linear-gradient(180deg,#d44a4a 0%,#982a2a 60%,#7a1e1e 100%);
-  border-color:#e87070;
-  border-bottom-color:#601818;
+.hbtn.amber{
+  background:linear-gradient(180deg,#e8c040 0%,#b88010 55%,#7a5000 100%);
+  border-color:#f0d060;border-bottom-color:#7a5000;
 }
-.hbtn.danger:hover{filter:brightness(1.1)}
-.hbtn-row{
-  display:flex;
-  gap:8px;
-  flex-wrap:wrap;
-}
-.hbtn-full{width:100%;font-size:16px;padding:12px 18px}
-/* ---------- Tabelle Aktuell/Soll (Lok-Stil) ---------- */
-.tbl{
-  width:100%;
-  border-collapse:separate;
-  border-spacing:0 4px;
-}
-.tbl td{
-  padding:6px 10px;
-  font-size:14px;
-  vertical-align:middle;
-}
-.tbl td:first-child{
-  font-weight:700;
-  color:#cde;
-  width:50%;
-}
-.tbl .val{
-  background:linear-gradient(180deg,#4a7fd4 0%,#2a5298 70%,#1e3f7a 100%);
-  border:1px solid #6fa0e8;
-  border-radius:5px;
-  text-align:center;
-  font-weight:700;
-  font-size:13px;
-  padding:5px 8px;
-  min-width:80px;
-  cursor:pointer;
-  transition:filter .08s;
-}
-.tbl .val:hover{filter:brightness(1.15)}
-.tbl .val.sel{
-  background:linear-gradient(180deg,#70b040 0%,#4a8020 70%,#306010 100%);
-  border-color:#90d060;
-  box-shadow:0 0 6px rgba(100,200,50,.35);
-}
-/* ---------- Lautstarkeregler ---------- */
-.vol-wrap{display:flex;align-items:center;gap:10px}
-.vol-label{color:#8ab;font-size:13px;width:110px;flex-shrink:0}
-.vol-num{
-  background:linear-gradient(180deg,#4a7fd4 0%,#2a5298 70%,#1e3f7a 100%);
-  border:1px solid #6fa0e8;
-  border-radius:5px;
-  font-weight:700;
-  font-size:13px;
-  padding:4px 10px;
-  min-width:54px;
-  text-align:center;
-}
-input[type=range]{
-  flex:1;
-  accent-color:#6fa0e8;
-  height:6px;
-  cursor:pointer;
-}
-/* ---------- Dateiliste (Lok-Tabellenzeilen) ---------- */
-.flist{
-  display:flex;
-  flex-direction:column;
-  gap:3px;
-}
-.frow{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  background:rgba(30,60,120,.35);
-  border:1px solid #1e3a6a;
-  border-radius:4px;
-  padding:6px 10px;
-  cursor:pointer;
-  font-size:13px;
-  gap:8px;
-  transition:background .08s, border-color .08s;
-}
-.frow:hover{background:rgba(74,127,212,.25);border-color:#4a7fd4}
-.frow.active{
-  background:linear-gradient(90deg,rgba(70,160,40,.3),rgba(30,120,20,.2));
-  border-color:#90d060;
-  color:#b0f060;
-  font-weight:700;
-}
-.frow-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.frow-meta{font-size:11px;color:#8ab;flex-shrink:0}
-.folder-head{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  font-size:12px;
-  font-weight:700;
-  letter-spacing:.06em;
-  text-transform:uppercase;
-  color:#8ab;
-  padding:5px 4px 3px;
-}
-/* ---------- Aufnahme-Button ---------- */
-.rec-circle{
-  width:60px;height:60px;
-  border-radius:50%;
-  background:linear-gradient(180deg,#d44a4a 0%,#982a2a 60%,#7a1e1e 100%);
-  border:2px solid #e87070;
-  box-shadow:0 2px 6px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1);
-  display:grid;
-  place-items:center;
-  cursor:pointer;
-  font-size:26px;
-  transition:filter .1s;
-  margin:auto;
-}
-.rec-circle:hover{filter:brightness(1.15)}
-.rec-circle:active{filter:brightness(.8)}
-.rec-circle.recording{
-  animation:rec-pulse 1s ease-in-out infinite;
-  box-shadow:0 0 18px rgba(220,60,60,.7),0 2px 6px rgba(0,0,0,.5);
-}
-@keyframes rec-pulse{
-  0%,100%{box-shadow:0 0 8px rgba(220,60,60,.5),0 2px 4px rgba(0,0,0,.5)}
-  50%{box-shadow:0 0 22px rgba(255,80,80,.9),0 2px 4px rgba(0,0,0,.5)}
-}
-.rec-label{text-align:center;font-size:12px;color:#8ab;margin-top:4px;letter-spacing:.06em}
-.rec-label.active{color:#f87070;font-weight:700}
-/* ---------- Statuszeile ---------- */
-.statusline{
-  background:#0a1628;
-  border-top:2px solid #2a5298;
-  padding:6px 20px;
-  display:flex;
-  align-items:center;
-  gap:12px;
-  min-height:36px;
-}
-.status-dot{
-  width:10px;height:10px;
-  border-radius:50%;
-  background:#333;
-  flex-shrink:0;
-}
-.status-dot.green{background:#50d050;box-shadow:0 0 6px #50d050}
-.status-dot.red{background:#f05050;box-shadow:0 0 6px #f05050}
-.status-dot.amber{background:#d0a020;box-shadow:0 0 6px #d0a020}
-.status-dot.blue{background:#50a0f0;box-shadow:0 0 6px #50a0f0}
-.status-text{font-size:13px;font-weight:700;letter-spacing:.04em;flex:1}
-.status-right{font-size:12px;color:#8ab;font-family:'Noto Sans',monospace}
-/* ---------- Dropdown ---------- */
+.hbtn.full{width:100%}
+.hbtn.xl{font-size:16px;padding:13px 20px}
+.btn-row{display:flex;gap:6px;flex-wrap:wrap}
+
+/* ===== SELECT ===== */
 select{
   width:100%;
   padding:7px 10px;
-  background:linear-gradient(180deg,#4a7fd4 0%,#2a5298 70%,#1e3f7a 100%);
-  border:1px solid #6fa0e8;
+  background:linear-gradient(180deg,var(--btn-top) 0%,var(--btn-mid) 55%,var(--btn-bot) 100%);
+  border:1px solid var(--btn-border);
   border-radius:5px;
   color:#fff;
   font-size:13px;
   font-weight:700;
-  font-family:inherit;
+  font-family:var(--font);
   outline:none;
   cursor:pointer;
   appearance:none;
   -webkit-appearance:none;
+  box-shadow:0 2px 4px rgba(0,0,0,.4);
 }
-select option{background:#1e3a6a;color:#fff}
-/* ---------- Input ---------- */
+select option{background:#0d2050;color:#fff}
+
+/* ===== INPUT ===== */
 input[type=text]{
   width:100%;
-  padding:8px 10px;
-  background:rgba(30,60,120,.5);
-  border:1px solid #2a5298;
+  padding:7px 10px;
+  background:rgba(10,26,60,.7);
+  border:1px solid var(--border);
   border-radius:5px;
   color:#fff;
   font-size:13px;
-  font-family:inherit;
+  font-family:var(--font);
   outline:none;
 }
-input[type=text]:focus{border-color:#6fa0e8;background:rgba(30,60,140,.7)}
-/* ---------- Notizmeldung ---------- */
-.note{
-  font-size:12px;
-  color:#8ab;
-  line-height:1.6;
-  padding:6px 10px;
-  background:rgba(10,22,60,.5);
-  border-left:3px solid #2a5298;
+input[type=text]:focus{border-color:var(--btn-top)}
+
+/* ===== SCHIEBEREGLER ===== */
+.vol-row{display:flex;align-items:center;gap:8px}
+.vol-lbl{font-size:12px;color:var(--muted);width:28px;flex-shrink:0;text-align:right}
+input[type=range]{
+  flex:1;height:5px;accent-color:var(--btn-top);cursor:pointer;
 }
-/* ---------- Scroll ---------- */
-.panel::-webkit-scrollbar{width:5px}
-.panel::-webkit-scrollbar-track{background:#0a1628}
-.panel::-webkit-scrollbar-thumb{background:#2a5298;border-radius:3px}
-/* ---------- responsive ---------- */
-@media(max-width:760px){
-  .main{grid-template-columns:1fr;overflow:visible}
-  .frame{overflow-y:auto}
-  body{overflow:auto}
-  .panel{border-right:none;border-bottom:1px solid #1e3a6a}
+.vol-val{
+  background:linear-gradient(180deg,var(--btn-top) 0%,var(--btn-mid) 70%,var(--btn-bot) 100%);
+  border:1px solid var(--btn-border);
+  border-radius:4px;
+  font-size:12px;font-weight:700;
+  padding:3px 7px;min-width:44px;text-align:center;
+}
+
+/* ===== LAUTSPRECHER-KACHELN ===== */
+.sp-grid{display:flex;flex-direction:column;gap:5px}
+.sp-card{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background:rgba(15,30,70,.6);
+  border:1px solid var(--border);
+  border-radius:5px;
+  padding:7px 10px;
+  cursor:pointer;
+  transition:border-color .1s,background .1s;
+}
+.sp-card:hover{background:rgba(45,96,184,.2);border-color:var(--btn-top)}
+.sp-card.on{
+  background:rgba(40,100,20,.3);
+  border-color:#70d030;
+}
+.sp-ind{
+  width:10px;height:10px;
+  border-radius:50%;
+  background:#333;
+  border:1px solid #555;
+  flex-shrink:0;
+}
+.sp-card.on .sp-ind{background:#60d030;border-color:#90f050;box-shadow:0 0 5px #60d030}
+.sp-info{flex:1;overflow:hidden}
+.sp-name{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-sub{font-size:11px;color:var(--muted)}
+.sp-vol{
+  background:linear-gradient(180deg,var(--btn-top) 0%,var(--btn-mid) 70%,var(--btn-bot) 100%);
+  border:1px solid var(--btn-border);border-radius:4px;
+  font-size:11px;font-weight:700;padding:2px 6px;
+}
+
+/* ===== AUFNAHME-BUTTON ===== */
+.rec-area{display:flex;flex-direction:column;align-items:center;gap:6px}
+.rec-btn{
+  width:64px;height:64px;
+  border-radius:50%;
+  background:linear-gradient(180deg,var(--red-top) 0%,var(--red-mid) 55%,var(--red-bot) 100%);
+  border:2px solid #f08080;
+  box-shadow:0 2px 6px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1);
+  display:grid;place-items:center;
+  cursor:pointer;
+  font-size:28px;
+  transition:filter .1s;
+}
+.rec-btn:hover{filter:brightness(1.15)}
+.rec-btn.recording{
+  animation:rpulse 1s ease-in-out infinite;
+}
+@keyframes rpulse{
+  0%,100%{box-shadow:0 0 6px rgba(220,60,60,.4)}
+  50%{box-shadow:0 0 22px rgba(255,80,80,.9),0 0 40px rgba(255,60,60,.4)}
+}
+.rec-lbl{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+.rec-lbl.active{color:#f07070;font-weight:700}
+
+/* ===== HAUPTBEREICH (Dateilisten) ===== */
+.content-area{
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  background:var(--bg);
+}
+.content-tabs{
+  display:flex;
+  border-bottom:2px solid var(--border);
+  background:var(--bg2);
+}
+.ctab{
+  flex:1;
+  padding:9px 8px;
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  text-align:center;
+  background:transparent;
+  border:none;
+  color:var(--muted);
+  cursor:pointer;
+  border-bottom:3px solid transparent;
+  margin-bottom:-2px;
+  transition:color .1s,border-color .1s;
+}
+.ctab.active{color:var(--text);border-bottom-color:var(--green-top)}
+.content-body{
+  flex:1;
+  overflow-y:auto;
+  padding:12px 14px;
+}
+.content-body::-webkit-scrollbar{width:4px}
+.content-body::-webkit-scrollbar-track{background:var(--bg)}
+.content-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* ===== DATEILISTEN ===== */
+.flist{display:flex;flex-direction:column;gap:3px}
+.frow{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(15,35,80,.5);
+  border:1px solid var(--border);
+  border-radius:4px;
+  padding:8px 12px;
+  cursor:pointer;
+  transition:background .08s,border-color .08s;
+}
+.frow:hover{background:rgba(45,96,184,.25);border-color:var(--btn-top)}
+.frow.active{
+  background:rgba(50,120,20,.3);
+  border-color:#70d030;
+  color:#b8f060;
+}
+.frow-icon{font-size:16px;flex-shrink:0;opacity:.8}
+.frow-name{flex:1;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.frow-meta{font-size:11px;color:var(--muted);flex-shrink:0}
+.folder-row{
+  display:flex;align-items:center;gap:6px;
+  font-size:12px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;
+  color:var(--muted);
+  padding:8px 4px 4px;
+  cursor:pointer;
+  transition:color .1s;
+}
+.folder-row:hover{color:var(--text)}
+.folder-children{padding-left:12px}
+
+/* ===== PLAY-LEISTE ===== */
+.play-bar{
+  padding:10px 14px;
+  border-top:2px solid var(--border);
+  background:var(--bg2);
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.play-info{flex:1;overflow:hidden}
+.play-file{font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.play-sub{font-size:11px;color:var(--muted)}
+
+/* ===== STATUSZEILE ===== */
+.statusbar{
+  background:var(--bg2);
+  border-top:2px solid var(--border);
+  display:flex;
+  align-items:center;
+  padding:0 14px;
+  gap:10px;
+  height:var(--status-h);
+}
+.st-dot{
+  width:9px;height:9px;border-radius:50%;background:#333;flex-shrink:0;
+}
+.st-dot.green{background:#50d050;box-shadow:0 0 5px #50d050}
+.st-dot.red{background:#f05050;box-shadow:0 0 5px #f05050}
+.st-dot.amber{background:#d4a020;box-shadow:0 0 5px #d4a020}
+.st-dot.blue{background:#40a0f0;box-shadow:0 0 5px #40a0f0}
+.st-txt{flex:1;font-size:12px;font-weight:700;letter-spacing:.04em}
+.st-right{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* ===== HINWEIS ===== */
+.note{
+  font-size:11px;color:var(--muted);line-height:1.6;
+  padding:6px 10px;
+  background:rgba(5,15,40,.6);
+  border-left:3px solid var(--border);
+  border-radius:0 4px 4px 0;
+}
+
+/* ===== LEERZUSTAND ===== */
+.empty{text-align:center;padding:28px 16px;color:var(--muted);font-size:13px}
+.empty-icon{font-size:36px;margin-bottom:8px}
+
+/* ===== TABS CONTENT ===== */
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+.sb-pane{display:none;flex-direction:column;gap:10px}
+.sb-pane.active{display:flex}
+
+@media(max-width:680px){
+  .main{grid-template-columns:1fr}
+  .sidebar{border-right:none;border-bottom:2px solid var(--border);max-height:45vh}
+  body,html{overflow:auto}
+  .frame{height:auto;overflow:visible}
 }
 </style>
 </head>
 <body>
 <div class="frame">
 
-<!-- ========== TITELLEISTE ========== -->
+<!-- TITELLEISTE -->
 <header class="titlebar">
-  <div class="titlebar-left" id="tl-date"></div>
-  <div class="titlebar-center">DURCHSAGEANLAGE</div>
-  <div class="titlebar-right" id="tl-time"></div>
+  <div class="tl-left" id="tlDate"></div>
+  <div class="tl-center">&#128266; DURCHSAGEANLAGE</div>
+  <div class="tl-right" id="tlTime"></div>
 </header>
 
-<!-- ========== HAUPTBEREICH ========== -->
+<!-- HAUPT -->
 <div class="main">
 
-  <!-- LINKES PANEL -->
-  <div class="panel">
-
-    <!-- Lautsprecher -->
-    <div class="p-head">Lautsprecher</div>
-    <div class="hbtn-row">
-      <button class="hbtn" id="btnDiscover" onclick="discoverSpeakers()">&#128269; Suchen</button>
-      <button class="hbtn danger" onclick="stopAll()">&#9209; Stop</button>
-    </div>
-    <div id="spList"><div style="font-size:13px;color:#8ab;padding:4px 0">Lautsprecher suchen…</div></div>
-
-    <!-- Lautstaerke -->
-    <div class="p-head" style="margin-top:6px">Lautst&auml;rke</div>
-    <div class="vol-wrap">
-      <span class="vol-label">Durchsage</span>
-      <input type="range" min="1" max="100" value="25" id="volRange"
-             oninput="document.getElementById('volNum').textContent=this.value+'%'">
-      <span class="vol-num" id="volNum">25%</span>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sb-tabs">
+      <button class="sbtab active" onclick="sbTab('lautsprecher',this)">&#128266; SONOS</button>
+      <button class="sbtab" onclick="sbTab('einstellungen',this)">&#9881; SETUP</button>
     </div>
 
-    <!-- Gong -->
-    <div class="p-head" style="margin-top:6px">Gong</div>
-    <select id="gongSel"><option value="">— Kein Gong —</option></select>
+    <!-- SONOS TAB -->
+    <div class="sb-body sb-pane active" id="sb-lautsprecher">
 
-    <!-- Aufnahme -->
-    <div class="p-head" style="margin-top:6px">Mikrofonaufnahme</div>
-    <div>
-      <div class="rec-circle" id="recBtn" onclick="toggleRec()">&#9210;</div>
-      <div class="rec-label" id="recLabel">BEREIT</div>
-    </div>
-    <div class="note">
-      Aufnehmen &rarr; automatisch auf ausgew&auml;hlten SONOS abspielen.<br>
-      SONOS unterst&uuml;tzt keine direkte Einspeisung.
-    </div>
+      <div>
+        <div class="sect-head">Lautsprecher</div>
+        <div class="btn-row" style="margin-bottom:8px">
+          <button class="hbtn" id="btnDisc" onclick="discoverSpeakers()" style="flex:1">&#128269; Suchen</button>
+          <button class="hbtn red" onclick="stopAll()" title="Alle stoppen">&#9209;</button>
+        </div>
+        <div class="sp-grid" id="spGrid">
+          <div class="empty"><div class="empty-icon">&#128266;</div>Suche starten…</div>
+        </div>
+      </div>
 
-    <!-- Neuen Ordner anlegen -->
-    <div class="p-head" style="margin-top:6px">Ordner anlegen</div>
-    <input type="text" id="newFolder" placeholder="Ordnername">
-    <button class="hbtn" style="margin-top:4px" onclick="createFolder()">Ordner erstellen</button>
+      <div>
+        <div class="sect-head">Lautstärke Durchsage</div>
+        <div class="vol-row">
+          <span class="vol-lbl" id="vlLbl">25%</span>
+          <input type="range" min="1" max="100" value="25" id="volRange"
+                 oninput="document.getElementById('vlLbl').textContent=this.value+'%'">
+          <span class="vol-val" id="vlVal">25%</span>
+        </div>
+      </div>
 
-  </div><!-- /links -->
+      <div>
+        <div class="sect-head">Gong</div>
+        <select id="gongSel"><option value="">— Kein Gong —</option></select>
+      </div>
 
-  <!-- RECHTES PANEL -->
-  <div class="panel">
-
-    <!-- Schnelldurchsagen -->
-    <div class="p-head">
-      Schnelldurchsagen
-      <button class="hbtn" style="padding:3px 10px;font-size:12px;float:right" onclick="loadQuick()">&#8635;</button>
-    </div>
-    <div id="quickTree"><div style="font-size:13px;color:#8ab">Lade…</div></div>
-
-    <!-- Aufnahmen -->
-    <div class="p-head" style="margin-top:6px">
-      Aufnahmen
-      <button class="hbtn" style="padding:3px 10px;font-size:12px;float:right" onclick="loadRecs()">&#8635;</button>
-    </div>
-    <div id="recList"><div style="font-size:13px;color:#8ab">Keine Aufnahmen.</div></div>
-
-    <!-- Abspielen -->
-    <div style="margin-top:auto;padding-top:12px">
-      <button class="hbtn hbtn-full" onclick="playSelected()">
-        &#9654;&nbsp; DURCHSAGE STARTEN
-      </button>
     </div>
 
-  </div><!-- /rechts -->
+    <!-- SETUP TAB -->
+    <div class="sb-body sb-pane" id="sb-einstellungen">
 
-</div><!-- /.main -->
+      <div>
+        <div class="sect-head">Mikrofon-Aufnahme</div>
+        <div class="rec-area">
+          <div class="rec-btn" id="recBtn" onclick="toggleRec()">&#9210;</div>
+          <div class="rec-lbl" id="recLbl">BEREIT</div>
+        </div>
+        <div class="note" style="margin-top:8px">
+          Aufnahme starten &rarr; stoppen &rarr; wird automatisch auf SONOS abgespielt.
+        </div>
+      </div>
 
-<!-- ========== STATUSZEILE ========== -->
-<footer class="statusline">
-  <div class="status-dot" id="sDot"></div>
-  <div class="status-text" id="sTxt">BEREIT</div>
-  <div class="status-right" id="sRight"></div>
+      <div>
+        <div class="sect-head">Neuer Ordner</div>
+        <input type="text" id="newFolder" placeholder="Ordnername (z.B. Notfall)">
+        <button class="hbtn full" style="margin-top:6px" onclick="createFolder()">&#128193; Ordner erstellen</button>
+      </div>
+
+      <div id="debugInfo" style="margin-top:4px">
+        <div class="sect-head">Verbindungs-Info</div>
+        <div class="note" id="debugTxt">Lade…</div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- HAUPTBEREICH -->
+  <div class="content-area">
+    <div class="content-tabs">
+      <button class="ctab active" onclick="cTab('schnell',this)">&#9889; Schnelldurchsagen</button>
+      <button class="ctab" onclick="cTab('aufnahmen',this)">&#127908; Aufnahmen</button>
+    </div>
+
+    <div class="content-body">
+      <!-- Schnell -->
+      <div class="tab-pane active" id="tp-schnell">
+        <div id="quickTree"><div class="empty"><div class="empty-icon">&#128193;</div>Keine Audiodateien.<br>Dateien in <code>schnelldurchsagen/</code> legen.</div></div>
+      </div>
+      <!-- Aufnahmen -->
+      <div class="tab-pane" id="tp-aufnahmen">
+        <div id="recList"><div class="empty"><div class="empty-icon">&#127908;</div>Noch keine Aufnahmen.</div></div>
+      </div>
+    </div>
+
+    <!-- PLAY-LEISTE -->
+    <div class="play-bar">
+      <div class="play-info">
+        <div class="play-file" id="playFile">— keine Datei ausgewählt —</div>
+        <div class="play-sub" id="playSub">Datei in der Liste anklicken</div>
+      </div>
+      <button class="hbtn green xl" onclick="playSelected()" id="playBtn">&#9654;&nbsp; ABSPIELEN</button>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- STATUSZEILE -->
+<footer class="statusbar">
+  <div class="st-dot" id="stDot"></div>
+  <div class="st-txt" id="stTxt">BEREIT</div>
+  <div class="st-right" id="stRight"></div>
 </footer>
 
-</div><!-- /.frame -->
+</div><!-- /frame -->
 
 <script>
 'use strict';
 
-let selPath    = '';
+let selPath     = '';
+let selFile     = '';
 let selSpeakers = new Set();
-let isRecording = false;
+let isRec       = false;
 
-// Uhr
-function updateClock(){
-  const now  = new Date();
-  const pad  = n => String(n).padStart(2,'0');
-  const days = ['So','Mo','Di','Mi','Do','Fr','Sa'];
-  document.getElementById('tl-date').textContent =
-    days[now.getDay()]+', '+pad(now.getDate())+'.'+pad(now.getMonth()+1)+'.'+String(now.getFullYear()).slice(-2);
-  document.getElementById('tl-time').textContent =
-    pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
+// ---- Uhr ----
+function tick(){
+  const n=new Date(),p=s=>String(s).padStart(2,'0');
+  const days=['So','Mo','Di','Mi','Do','Fr','Sa'];
+  document.getElementById('tlDate').textContent=
+    days[n.getDay()]+', '+p(n.getDate())+'.'+p(n.getMonth()+1)+'.'+String(n.getFullYear()).slice(-2);
+  document.getElementById('tlTime').textContent=
+    p(n.getHours())+':'+p(n.getMinutes())+':'+p(n.getSeconds());
 }
-setInterval(updateClock,1000);
-updateClock();
+setInterval(tick,1000); tick();
 
-// API
-async function api(url, opts={}){
+// ---- Lautstärke sync ----
+document.getElementById('volRange').addEventListener('input',function(){
+  document.getElementById('vlLbl').textContent=this.value+'%';
+  document.getElementById('vlVal').textContent=this.value+'%';
+});
+
+// ---- API ----
+async function api(url,opts={}){
   try{
-    const r = await fetch(url,{headers:{'Content-Type':'application/json'},...opts});
+    const r=await fetch(url,{headers:{'Content-Type':'application/json'},...opts});
+    if(!r.ok) return {success:false,error:`HTTP ${r.status}`};
     return await r.json();
-  }catch(e){
-    return {success:false,error:e.message};
-  }
+  }catch(e){return {success:false,error:e.message};}
 }
 
-// Status
-function setStatus(msg, type=''){
-  const dot  = document.getElementById('sDot');
-  const txt  = document.getElementById('sTxt');
-  const map  = {ok:'green',err:'red',warn:'amber',info:'blue','':''};
-  dot.className = 'status-dot '+(map[type]||'');
-  txt.textContent = msg;
+// ---- Status ----
+function setStatus(msg,type=''){
+  const m={ok:'green',err:'red',warn:'amber',info:'blue'};
+  document.getElementById('stDot').className='st-dot '+(m[type]||'');
+  document.getElementById('stTxt').textContent=msg;
 }
 
-// Systemstatus laden
-async function loadSysStatus(){
-  const d = await api('/api/status');
-  document.getElementById('sRight').textContent =
-    `${d.ip}:${d.port||5000}  |  SOCO: ${d.soco?'OK':'FEHLT'}  |  AUDIO: ${d.audio?'OK':'FEHLT'}`;
+// ---- Tab-Umschaltung ----
+function sbTab(id,btn){
+  document.querySelectorAll('.sb-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sbtab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('sb-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+function cTab(id,btn){
+  document.querySelectorAll('.tab-pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.ctab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tp-'+id).classList.add('active');
+  btn.classList.add('active');
 }
 
 // ---- Lautsprecher ----
 function renderSpeakers(list){
-  const el = document.getElementById('spList');
+  const g=document.getElementById('spGrid');
   if(!list||!list.length){
-    el.innerHTML='<div style="font-size:13px;color:#8ab">Keine SONOS-Geräte gefunden.</div>';
+    g.innerHTML='<div class="empty"><div class="empty-icon">&#128266;</div>Keine SONOS-Geräte gefunden.</div>';
     return;
   }
-  el.innerHTML='';
-  // Tabelle wie im Lok-HMI
-  const tbl = document.createElement('table');
-  tbl.className='tbl';
+  g.innerHTML='';
   list.forEach(s=>{
-    const tr = document.createElement('tr');
-    const sel = selSpeakers.has(s.ip);
-    tr.innerHTML=`
-      <td style="font-weight:700;color:#fff">${s.name}<br><span style="font-size:11px;color:#8ab;font-weight:400">${s.ip}</span></td>
-      <td><div class="val${sel?' sel':''}" data-ip="${s.ip}" onclick="toggleSp('${s.ip}',this)">${sel?'EIN':'AUS'}</div></td>
-      <td><div class="val" style="cursor:default">${s.volume}%</div></td>`;
-    tbl.appendChild(tr);
+    const on=selSpeakers.has(s.ip);
+    const d=document.createElement('div');
+    d.className='sp-card'+(on?' on':'');
+    d.innerHTML=
+      `<div class="sp-ind"></div>`+
+      `<div class="sp-info">`+
+        `<div class="sp-name">${s.name}</div>`+
+        `<div class="sp-sub">${s.ip} &bull; ${s.group||'Solo'}</div>`+
+      `</div>`+
+      `<div class="sp-vol">${s.volume}%</div>`;
+    d.addEventListener('click',()=>{
+      if(selSpeakers.has(s.ip)){selSpeakers.delete(s.ip);d.classList.remove('on');}
+      else{selSpeakers.add(s.ip);d.classList.add('on');}
+      setStatus(selSpeakers.size?`${selSpeakers.size} Gerät(e) ausgewählt`:'Kein Gerät ausgewählt',
+                selSpeakers.size?'ok':'warn');
+    });
+    g.appendChild(d);
   });
-  el.appendChild(tbl);
-}
-
-function toggleSp(ip, el){
-  if(selSpeakers.has(ip)){
-    selSpeakers.delete(ip);
-    el.classList.remove('sel');
-    el.textContent='AUS';
-  }else{
-    selSpeakers.add(ip);
-    el.classList.add('sel');
-    el.textContent='EIN';
-  }
 }
 
 async function discoverSpeakers(){
-  const btn=document.getElementById('btnDiscover');
-  btn.textContent='…';
-  setStatus('Suche SONOS…','info');
+  const b=document.getElementById('btnDisc');
+  b.textContent='⧖';
+  b.disabled=true;
+  setStatus('Suche SONOS-Geräte (8 s)…','info');
   const d=await api('/api/speakers/discover',{method:'POST',body:'{}'});
   renderSpeakers(d.speakers||[]);
-  setStatus((d.speakers||[]).length?`${d.speakers.length} Lautsprecher gefunden`:'Keine Geräte gefunden',
-            (d.speakers||[]).length?'ok':'warn');
-  btn.textContent='&#128269; Suchen';
-  btn.innerHTML='&#128269; Suchen';
+  const n=(d.speakers||[]).length;
+  setStatus(n?`${n} Gerät(e) gefunden - bitte auswählen`:'Keine Geräte gefunden',n?'ok':'warn');
+  b.innerHTML='&#128269; Suchen';
+  b.disabled=false;
 }
 
 // ---- Gong ----
 async function loadGongs(){
   const d=await api('/api/gongs');
-  const sel=document.getElementById('gongSel');
-  sel.innerHTML='<option value="">— Kein Gong —</option>';
+  const s=document.getElementById('gongSel');
+  s.innerHTML='<option value="">— Kein Gong —</option>';
   (d.gongs||[]).forEach(g=>{
     const o=document.createElement('option');
-    o.value=g.path;o.textContent=g.name;sel.appendChild(o);
+    o.value=g.path;o.textContent=g.name;s.appendChild(o);
   });
 }
 
-// ---- Dateibaum ----
-function makeRow(file){
+// ---- Datei auswaehlen ----
+function selectFile(path,name){
+  selPath=path;selFile=name;
+  document.querySelectorAll('.frow').forEach(r=>r.classList.remove('active'));
+  document.getElementById('playFile').textContent=name;
+  document.getElementById('playSub').textContent=path;
+  setStatus('Ausgewählt: '+name,'info');
+}
+
+// ---- Dateiliste ----
+function makeFileRow(f){
   const div=document.createElement('div');
-  div.className='frow'+(selPath===file.path?' active':'');
-  div.innerHTML=`<span class="frow-name">${file.name}</span><span class="frow-meta">${(file.size/1024).toFixed(0)} KB</span>`;
+  div.className='frow'+(selPath===f.path?' active':'');
+  div.dataset.path=f.path;
+  const ext=f.name.split('.').pop().toUpperCase();
+  const kb=(f.size/1024).toFixed(0);
+  div.innerHTML=
+    `<span class="frow-icon">&#127925;</span>`+
+    `<span class="frow-name">${f.name}</span>`+
+    `<span class="frow-meta">${ext} &bull; ${kb} KB</span>`;
   div.addEventListener('click',()=>{
-    selPath=file.path;
-    document.querySelectorAll('.frow').forEach(e=>e.classList.remove('active'));
+    document.querySelectorAll('.frow').forEach(r=>r.classList.remove('active'));
     div.classList.add('active');
-    setStatus('BEREIT: '+file.name,'info');
+    selectFile(f.path,f.name);
   });
   return div;
 }
 
-function renderNode(node, cont, isRoot){
-  if(!isRoot&&node.name){
+function renderNode(node,cont,root){
+  if(!root&&node.name){
     const h=document.createElement('div');
-    h.className='folder-head';
+    h.className='folder-row';
     h.innerHTML=`&#128193;&nbsp;${node.name}`;
+    const ch=document.createElement('div');
+    ch.className='folder-children';
+    let open=true;
+    h.addEventListener('click',()=>{open=!open;ch.style.display=open?'':'none';});
     cont.appendChild(h);
+    cont=ch;
+    cont.parentElement?.appendChild(ch);
+    // restructure
+    const wrap=document.createDocumentFragment();
+    (node.files||[]).forEach(f=>wrap.appendChild(makeFileRow(f)));
+    (node.folders||[]).forEach(f=>renderNode(f,wrap,false));
+    ch.appendChild(wrap);
+    cont.parentElement?.parentElement?.appendChild(ch) // no-op
+    return;
   }
-  const wrap=document.createElement('div');
-  wrap.className='flist';
-  if(!isRoot){wrap.style.paddingLeft='10px'}
-  (node.files||[]).forEach(f=>wrap.appendChild(makeRow(f)));
-  (node.folders||[]).forEach(f=>renderNode(f,wrap,false));
-  cont.appendChild(wrap);
+  const fl=document.createElement('div');fl.className='flist';
+  (node.files||[]).forEach(f=>fl.appendChild(makeFileRow(f)));
+  cont.appendChild(fl);
+  (node.folders||[]).forEach(f=>renderNode(f,cont,false));
 }
 
 async function loadQuick(){
   const d=await api('/api/schnelldurchsagen');
   const c=document.getElementById('quickTree');c.innerHTML='';
   const any=n=>((n.files||[]).length>0||(n.folders||[]).some(any));
-  if(!any(d)){c.innerHTML='<div style="font-size:13px;color:#8ab">Keine Audiodateien.</div>';return;}
+  if(!any(d)){c.innerHTML='<div class="empty"><div class="empty-icon">&#128193;</div>Keine Audiodateien.<br>Dateien in <code>schnelldurchsagen/</code> legen.</div>';return;}
   renderNode(d,c,true);
 }
 
@@ -554,41 +693,47 @@ async function loadRecs(){
   const d=await api('/api/recordings');
   const el=document.getElementById('recList');
   const recs=d.recordings||[];
-  if(!recs.length){el.innerHTML='<div style="font-size:13px;color:#8ab">Keine Aufnahmen.</div>';return;}
+  if(!recs.length){el.innerHTML='<div class="empty"><div class="empty-icon">&#127908;</div>Noch keine Aufnahmen.</div>';return;}
   el.innerHTML='';
-  const wrap=document.createElement('div');wrap.className='flist';
+  const fl=document.createElement('div');fl.className='flist';
   recs.forEach(r=>{
     const div=document.createElement('div');
     div.className='frow'+(selPath===r.path?' active':'');
-    div.innerHTML=`<span class="frow-name">${r.name}</span><span class="frow-meta">${(r.size/1024).toFixed(0)} KB</span>`;
+    div.dataset.path=r.path;
+    const kb=(r.size/1024).toFixed(0);
+    const dt=new Date(r.modified*1000);
+    const ts=`${dt.getDate().toString().padStart(2,'0')}.${(dt.getMonth()+1).toString().padStart(2,'0')}. ${dt.getHours().toString().padStart(2,'0')}:${dt.getMinutes().toString().padStart(2,'0')}`;
+    div.innerHTML=
+      `<span class="frow-icon">&#127908;</span>`+
+      `<span class="frow-name">${r.name}</span>`+
+      `<span class="frow-meta">${kb} KB &bull; ${ts}</span>`;
     div.addEventListener('click',()=>{
-      selPath=r.path;
-      document.querySelectorAll('.frow').forEach(e=>e.classList.remove('active'));
+      document.querySelectorAll('.frow').forEach(x=>x.classList.remove('active'));
       div.classList.add('active');
-      setStatus('BEREIT: '+r.name,'info');
+      selectFile(r.path,r.name);
     });
-    wrap.appendChild(div);
+    fl.appendChild(div);
   });
-  el.appendChild(wrap);
+  el.appendChild(fl);
 }
 
 // ---- Aufnahme ----
 async function toggleRec(){
   const btn=document.getElementById('recBtn');
-  const lbl=document.getElementById('recLabel');
-  if(!isRecording){
+  const lbl=document.getElementById('recLbl');
+  if(!isRec){
     const d=await api('/api/record/start',{method:'POST',body:'{}'});
     if(d.success){
-      isRecording=true;
+      isRec=true;
       btn.classList.add('recording');
       btn.innerHTML='&#9209;';
       lbl.textContent='REC ●';
       lbl.classList.add('active');
       setStatus('Aufnahme läuft…','warn');
-    }else setStatus('Aufnahme: '+(d.error||'Fehler'),'err');
+    }else setStatus('Aufnahme-Fehler: '+(d.error||'?'),'err');
   }else{
     const d=await api('/api/record/stop',{method:'POST',body:'{}'});
-    isRecording=false;
+    isRec=false;
     btn.classList.remove('recording');
     btn.innerHTML='&#9210;';
     lbl.textContent='BEREIT';
@@ -596,49 +741,67 @@ async function toggleRec(){
     if(d.success){
       setStatus('Gespeichert: '+d.filename,'ok');
       await loadRecs();
-      if(selSpeakers.size&&d.path){selPath=d.path;await playSelected();}
-    }else setStatus('Speicherfehler: '+(d.error||''),'err');
+      cTab('aufnahmen',document.querySelectorAll('.ctab')[1]);
+      if(selSpeakers.size&&d.path){
+        selPath=d.path;selFile=d.filename;
+        document.getElementById('playFile').textContent=d.filename;
+        document.getElementById('playSub').textContent=d.path;
+        await playSelected();
+      }
+    }else setStatus('Speicherfehler: '+(d.error||'?'),'err');
   }
 }
 
 // ---- Abspielen ----
 async function playSelected(){
-  if(!selPath){setStatus('Keine Datei ausgewählt','err');return;}
-  if(!selSpeakers.size){setStatus('Keinen Lautsprecher ausgewählt','err');return;}
-  setStatus('Sende Durchsage…','info');
+  if(!selPath){setStatus('Keine Datei ausgewählt!','err');return;}
+  if(!selSpeakers.size){setStatus('Keinen Lautsprecher ausgewählt!','err');return;}
+  const volume=parseInt(document.getElementById('volRange').value,10);
+  const gong  =document.getElementById('gongSel').value;
+  setStatus('Durchsage wird gesendet…','info');
+  document.getElementById('playBtn').textContent='\u23f3 Sende…';
   const d=await api('/api/play',{
     method:'POST',
     body:JSON.stringify({
       audio_path: selPath,
-      gong_path:  document.getElementById('gongSel').value,
+      gong_path:  gong||null,
       speakers:   Array.from(selSpeakers),
-      volume:     parseInt(document.getElementById('volRange').value,10)
+      volume
     })
   });
-  if(d.success)setStatus('DURCHSAGE AKTIV  ►  '+selPath.split('/').pop(),'ok');
-  else setStatus('FEHLER: '+(d.error||'unbekannt'),'err');
+  document.getElementById('playBtn').innerHTML='&#9654;&nbsp; ABSPIELEN';
+  if(d.success){
+    setStatus('&#9654; AKTIV: '+selFile,'ok');
+  }else{
+    setStatus('FEHLER: '+(d.error||'unbekannt'),'err');
+  }
 }
 
 async function stopAll(){
-  const d=await api('/api/stop',{
-    method:'POST',
-    body:JSON.stringify({speakers:Array.from(selSpeakers)})
-  });
-  setStatus(d.success?'Wiedergabe gestoppt':'Stop-Fehler: '+(d.errors||[]).join(', '),
-            d.success?'ok':'err');
+  const d=await api('/api/stop',{method:'POST',body:JSON.stringify({speakers:Array.from(selSpeakers)})});
+  setStatus(d.success?'Wiedergabe gestoppt':'Stop-Fehler','ok');
 }
 
 async function createFolder(){
-  const name=document.getElementById('newFolder').value.trim();
-  if(!name){setStatus('Ordnername eingeben','err');return;}
-  const d=await api('/api/folder/create',{method:'POST',body:JSON.stringify({name})});
-  if(d.success){document.getElementById('newFolder').value='';setStatus('Ordner erstellt: '+name,'ok');await loadQuick();}
-  else setStatus('Fehler: '+(d.error||''),'err');
+  const n=document.getElementById('newFolder').value.trim();
+  if(!n){setStatus('Ordnername eingeben','err');return;}
+  const d=await api('/api/folder/create',{method:'POST',body:JSON.stringify({name:n})});
+  if(d.success){
+    document.getElementById('newFolder').value='';
+    setStatus('Ordner erstellt: '+n,'ok');
+    await loadQuick();
+  }else setStatus('Fehler: '+(d.error||'?'),'err');
 }
 
 // ---- Init ----
 (async()=>{
-  await loadSysStatus();
+  const s=await api('/api/status');
+  document.getElementById('stRight').textContent=
+    `${s.ip||''}:${s.port||5000}  |  SOCO: ${s.soco?'\u2713':'\u2717'}  |  AUDIO: ${s.audio?'\u2713':'\u2717'}`;
+  const tu=await api('/api/test-url');
+  document.getElementById('debugTxt').textContent=
+    'Media-URL: '+(tu.base_url||'unbekannt')+
+    '\nSONOS muss diesen Host per HTTP erreichen koennen!';
   await loadGongs();
   await loadQuick();
   await loadRecs();
